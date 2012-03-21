@@ -380,7 +380,7 @@ def email_targets(message):
 def sign_bytes(bytes, sign_as=None):
     r"""Sign ``bytes`` as ``sign_as``.
 
-    >>> print(sign_bytes(bytes(b'Hello'), 'wking@drexel.edu'))
+    >>> print(sign_bytes(bytes(b'Hello'), 'pgp-mime@invalid.com'))
     ... # doctest: +ELLIPSIS
     b'-----BEGIN PGP SIGNATURE-----\n...-----END PGP SIGNATURE-----\n'
     """
@@ -393,7 +393,7 @@ def sign_bytes(bytes, sign_as=None):
 def encrypt_bytes(bytes, recipients):
     r"""Encrypt ``bytes`` to ``recipients``.
 
-    >>> encrypt_bytes(bytes(b'Hello'), ['wking@drexel.edu'])
+    >>> encrypt_bytes(bytes(b'Hello'), ['pgp-mime@invalid.com'])
     ... # doctest: +ELLIPSIS
     b'-----BEGIN PGP MESSAGE-----\n...-----END PGP MESSAGE-----\n'
     """
@@ -409,7 +409,7 @@ def sign_and_encrypt_bytes(bytes, sign_as=None, recipients=None):
     r"""Sign ``bytes`` as ``sign_as`` and encrypt to ``recipients``.
 
     >>> sign_and_encrypt_bytes(
-    ...     bytes(b'Hello'), 'wking@drexel.edu', ['wking@drexel.edu'])
+    ...     bytes(b'Hello'), 'pgp-mime@invalid.com', ['pgp-mime@invalid.com'])
     ... # doctest: +ELLIPSIS
     b'-----BEGIN PGP MESSAGE-----\n...-----END PGP MESSAGE-----\n'
     """
@@ -431,7 +431,7 @@ def sign(message, sign_as=None):
     +-> application/pgp-signature  (signature)
 
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> signed = sign(message, sign_as='0xFC29BDCDF15F5BE8')
+    >>> signed = sign(message, sign_as='pgp-mime@invalid.com')
     >>> signed.set_boundary('boundsep')
     >>> print(signed.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="boundsep"
@@ -462,7 +462,7 @@ def sign(message, sign_as=None):
     >>> message = MIMEMultipart()
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
-    >>> signed = sign(message, sign_as='0xFC29BDCDF15F5BE8')
+    >>> signed = sign(message, sign_as='pgp-mime@invalid.com')
     >>> signed.set_boundary('boundsep')
     >>> print(signed.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="boundsep"
@@ -524,7 +524,7 @@ def encrypt(message, recipients=None):
     +-> application/octet-stream   (body)
 
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> message['To'] = '"W. Trevor King" <wking@drexel.edu>'
+    >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
     >>> encrypted = encrypt(message)
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
@@ -555,7 +555,7 @@ def encrypt(message, recipients=None):
     >>> message = MIMEMultipart()
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
-    >>> encrypted = encrypt(message, recipients=['F15F5BE8'])
+    >>> encrypted = encrypt(message, recipients=['pgp-mime@invalid.com'])
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string()) # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
@@ -614,8 +614,8 @@ def sign_and_encrypt(message, sign_as=None, recipients=None):
      +-> application/octet-stream   (body)
 
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> message['To'] = '"W. Trevor King" <wking@drexel.edu>'
-    >>> encrypted = sign_and_encrypt(message)
+    >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
+    >>> encrypted = sign_and_encrypt(message, sign_as='pgp-mime@invalid.com')
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
@@ -645,7 +645,8 @@ def sign_and_encrypt(message, sign_as=None, recipients=None):
     >>> message = MIMEMultipart()
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
-    >>> encrypted = sign_and_encrypt(message, recipients=['F15F5BE8'])
+    >>> encrypted = sign_and_encrypt(
+    ...     message, sign_as='pgp-mime@invalid.com', recipients=['pgp-mime@invalid.com'])
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string()) # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
