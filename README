@@ -1,4 +1,4 @@
-Python module and for constructing and sending PGP/MIME email.
+Python module and tools for constructing and sending PGP/MIME email.
 
 The ``pgp_mime`` module makes it easy to construct and dispatch signed
 and/or encrypted email using PGP_ and :RFC:`3156`.  It uses GnuPG_ to
