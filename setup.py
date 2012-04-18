@@ -1,4 +1,4 @@
-# Copyright (C) 2012 W. Trevor King <wking@drexel.edu>
+# Copyright (C) 2012 W. Trevor King <wking@tremily.us>
 #
 # This file is part of pgp-mime.
 #
@@ -28,7 +28,7 @@ _setup(
     name='pgp-mime',
     version=__version__,
     maintainer='W. Trevor King',
-    maintainer_email='wking@drexel.edu',
+    maintainer_email='wking@tremily.us',
     url='http://blog.tremily.us/posts/pgp-mime/',
     download_url='http://git.tremily.us/?p=pgp-mime.git;a=snapshot;h=v{};sf=tgz'.format(__version__),
     license = 'GNU General Public License (GPL)',
