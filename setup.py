@@ -46,6 +46,6 @@ _setup(
         'Topic :: Software Development'
         ],
     scripts = ['bin/send-pgp-mime.py'],
-    py_modules = ['pgp_mime'],
+    packages = ['pgp_mime'],
     provides = ['pgp_mime'],
     )
