@@ -104,12 +104,12 @@ Testing
 
 Run the internal unit tests using nose_::
 
-  $ nosetests --with-doctest --doctest-tests pgp-mime
+  $ nosetests --with-doctest --doctest-tests pgp_mime
 
 If a Python-3-version of ``nosetests`` is not the default on your
 system, you may need to try something like::
 
-  $ nosetests-3.2 --with-doctest --doctest-tests pgp-mime
+  $ nosetests-3.2 --with-doctest --doctest-tests pgp_mime
 
 Licence
 =======
