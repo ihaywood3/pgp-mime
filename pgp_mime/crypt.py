@@ -72,7 +72,8 @@ def _write(fd, data):
 
 
 def sign_and_encrypt_bytes(data, signers=None, recipients=None,
-                           always_trust=False, mode='detach'):
+                           always_trust=False, mode='detach',
+                           allow_default_signer=False):
     r"""Sign ``data`` with ``signers`` and encrypt to ``recipients``.
 
     Just sign:
@@ -116,11 +117,12 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
         client.make_request(
             _common.Request('OUTPUT', 'FD={}'.format(output_write)))
         parameters = []
-        if signers and recipients:
-            command = 'SIGN_ENCRYPT'
-        elif signers:
-            command = 'SIGN'
-            parameters.append('--{}'.format(mode))
+        if signers or allow_default_signer:
+            if recipients:
+                command = 'SIGN_ENCRYPT'
+            else:
+                command = 'SIGN'
+                parameters.append('--{}'.format(mode))
         elif recipients:
             command = 'ENCRYPT'
         else:

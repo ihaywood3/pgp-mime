@@ -12,7 +12,7 @@ from .email import email_targets as _email_targets
 from .email import strip_bcc as _strip_bcc
 
 
-def sign(message, signers=None):
+def sign(message, signers=None, allow_default_signer=False):
     r"""Sign a ``Message``, returning the signed version.
 
     multipart/signed
@@ -92,7 +92,8 @@ def sign(message, signers=None):
     """
     body = message.as_string().encode('us-ascii')
     signature = str(_sign_and_encrypt_bytes(
-            data=body, signers=signers), 'us-ascii')
+            data=body, signers=signers,
+            allow_default_signer=allow_default_signer), 'us-ascii')
     sig = _MIMEApplication(
         _data=signature,
         _subtype='pgp-signature; name="signature.asc"',
@@ -202,7 +203,7 @@ def encrypt(message, recipients=None, always_trust=True):
     return msg
 
 def sign_and_encrypt(message, signers=None, recipients=None,
-                     always_trust=False):
+                     always_trust=False, allow_default_signer=False):
     r"""Sign and encrypt a ``Message``, returning the encrypted version.
 
     multipart/encrypted
@@ -278,7 +279,8 @@ def sign_and_encrypt(message, signers=None, recipients=None,
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
     encrypted = str(_sign_and_encrypt_bytes(
             data=body, signers=signers, recipients=recipients,
-            always_trust=always_trust), 'us-ascii')
+            always_trust=always_trust,
+            allow_default_signer=allow_default_signer), 'us-ascii')
     enc = _MIMEApplication(
         _data=encrypted,
         _subtype='octet-stream; name="encrypted.asc"',
