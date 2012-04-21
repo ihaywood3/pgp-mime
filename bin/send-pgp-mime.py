@@ -143,15 +143,20 @@ if __name__ == '__main__':
         for attachment in args.attachment:
             body.attach(load_attachment(
                     filename=attachment, encoding=args.encoding))
+    if args.sign_as:
+        signers = [args.sign_as]
+    else:
+        signers = None
     if 'encrypt' in args.mode:
         recipients = [email for name,email in _pgp_mime.email_targets(header)]
     if args.mode == 'sign':
-        body = _pgp_mime.sign(body, sign_as=args.sign_as)
+        body = _pgp_mime.sign(body, signers=signers, allow_default_signer=True)
     elif args.mode == 'encrypt':
         body = _pgp_mime.encrypt(body, recipients=recipients)
     elif args.mode == 'sign-encrypt':
         body = _pgp_mime.sign_and_encrypt(
-            body, sign_as=args.sign_as, recipients=recipients)
+            body, signers=signers, recipients=recipients,
+            allow_default_signer=True)
     elif args.mode == 'plain':
         pass
     else:
