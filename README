@@ -1,8 +1,8 @@
 Python module and tools for constructing and sending PGP/MIME email.
 
 The ``pgp_mime`` module makes it easy to construct and dispatch signed
-and/or encrypted email using PGP_ and :RFC:`3156`.  It uses GnuPG_ to
-perform the cryptography.
+and/or encrypted email using PGP_ and :RFC:`3156`.  It uses GnuPG_
+(via `gpgme-tool`_) to perform the cryptography.
 
 Installation
 ============
@@ -26,9 +26,10 @@ Dependencies
 ``pgp-mime`` is a simple package with no external dependencies outside
 the Python 3 standard library.  There are a number of GnuPG_ wrappers
 for python `out there`__, but none of them seem mature/stable enough
-to be worth installing.  Instead, we use the ``subprocess`` module to
-call ``gpg`` directly.  If this isn't working for you, you need only
-replace the ``*_bytes`` commands which handle the cryptography.
+to be worth installing.  Instead, we use the `pyassuan`_ module to
+talk to `gpgme-tool`_ over pipes or sockets.  If this isn't working
+for you, you need only replace the ``pgp_mime.crypt`` module to handle
+the cryptography.
 
 __ wrappers_
 
@@ -74,6 +75,10 @@ If you can convince your students to get PGP keys, you could also
 encrypt their grades by changing ``--mode sign`` to ``--mode
 sign-encrypt``.
 
+Of course, if you're interested in working with students and grades,
+you might also be interested in my `pygrader`_ package, which uses
+pgp-mime under the hood.
+
 Configuring the SMTP connection
 -------------------------------
 
@@ -81,7 +86,7 @@ Pgp-mime supports two methods for sending messages (via
 ``pgp_mime.mail``).  It can either call your system's ``sendmail``
 equivalent, or connect directly to an SMTP_ server using ``smtplib``.
 Since I imagine SMTP will be more common, you can easily configure
-your SMTP connection via ``~/.config/pgp-mime.conf``::
+your SMTP connection via ``~/.config/smtplib.conf``::
 
   [smtp]
   host: smtp.mail.uu.edu
@@ -128,9 +133,13 @@ wking@tremily.us
 .. _layman: http://layman.sourceforge.net/
 .. _wtk overlay: http://blog.tremily.us/posts/Gentoo_overlay/
 .. _wrappers: http://wiki.python.org/moin/GnuPrivacyGuard
+.. _pyassuan: http://blog.tremily.us/posts/pyassuan/
+.. _gpgme-tool:
+  http://git.gnupg.org/cgi-bin/gitweb.cgi?p=gpgme.git;a=blob;f=src/gpgme-tool.c;hb=HEAD
 .. _Git: http://git-scm.com/
 .. _homepage: http://blog.tremily.us/posts/pgp-mime/
 .. _wrappers and pinentry program: http://blog.tremily.us/posts/gpg-agent/
+.. _pygrader: http://blog.tremily.us/posts/pygrader/
 .. _SMTP: http://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol
 .. _STARTTLS: http://en.wikipedia.org/wiki/STARTTLS
 .. _GnuPG: http://www.gnupg.org/
