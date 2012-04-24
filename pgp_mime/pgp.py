@@ -1,5 +1,6 @@
 # Copyright
 
+import copy as _copy
 from email import message_from_bytes as _message_from_bytes
 from email.encoders import encode_7or8bit as _encode_7or8bit
 from email.mime.application import MIMEApplication as _MIMEApplication
@@ -518,4 +519,4 @@ def verify(message):
         sig_data = sig_data.encode('us-ascii')
     decrypted,verified,result = _verify_bytes(
         body.as_string().encode('us-ascii'), signature=sig_data)
-    return (body, verified, result)
+    return (_copy.deepcopy(body), verified, result)
