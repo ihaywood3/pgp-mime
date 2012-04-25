@@ -91,7 +91,8 @@ def sign(message, signers=None, allow_default_signer=False):
     <BLANKLINE>
     --boundsep--
     """
-    body = message.as_string().encode('us-ascii')
+    body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
+    # use email.policy.SMTP once we get Python 3.3
     signature = str(_sign_and_encrypt_bytes(
             data=body, signers=signers,
             allow_default_signer=allow_default_signer), 'us-ascii')
@@ -176,7 +177,8 @@ def encrypt(message, recipients=None, always_trust=True):
     <BLANKLINE>
     --boundsep--
     """
-    body = message.as_string().encode('us-ascii')
+    body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
+    # use email.policy.SMTP once we get Python 3.3
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
@@ -274,7 +276,8 @@ def sign_and_encrypt(message, signers=None, recipients=None,
     --boundsep--
     """
     _strip_bcc(message=message)
-    body = message.as_string().encode('us-ascii')
+    body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
+    # use email.policy.SMTP once we get Python 3.3
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
@@ -362,7 +365,8 @@ def decrypt(message):
     >>> message = encodedMIMEText('Hi\nBye')
     >>> encrypted = encrypt(message, recipients=['<pgp-mime@invalid.com>'])
     >>> decrypted = decrypt(encrypted)
-    >>> print(decrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(decrypted.as_string().replace('\r\n', '\n'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
@@ -416,7 +420,8 @@ def verify(message):
     >>> encrypted = sign_and_encrypt(message, signers=['pgp-mime@invalid.com'],
     ...     always_trust=True)
     >>> decrypted,verified,result = verify(encrypted)
-    >>> print(decrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(decrypted.as_string().replace('\r\n', '\n'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
@@ -518,5 +523,7 @@ def verify(message):
     if not isinstance(sig_data, bytes):
         sig_data = sig_data.encode('us-ascii')
     decrypted,verified,result = _verify_bytes(
-        body.as_string().encode('us-ascii'), signature=sig_data)
+        body.as_string().encode('us-ascii').replace(b'\n', b'\r\n'),
+        signature=sig_data)
+    # use email.policy.SMTP once we get Python 3.3
     return (_copy.deepcopy(body), verified, result)
