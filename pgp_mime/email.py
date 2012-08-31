@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License along with
 # pgp-mime.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
+
 from email.header import decode_header as _decode_header
 from email.message import Message as _Message
 from email.mime.text import MIMEText as _MIMEText
