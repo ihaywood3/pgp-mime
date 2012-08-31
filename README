@@ -33,6 +33,11 @@ the cryptography.
 
 __ wrappers_
 
+It would be awkward to backport ``pgp-mime`` to Python 2.7, because we
+take advantage of the ``pass_fds`` argument to Popen_ to pass file
+descriptors to the child `gpgme-tool` processes.  Once we get to
+Python 3.3, we'll use sendmsg_ and recvmsg_ instead.
+
 Installing by hand
 ------------------
 
@@ -136,6 +141,9 @@ wking@tremily.us
 .. _pyassuan: http://blog.tremily.us/posts/pyassuan/
 .. _gpgme-tool:
   http://git.gnupg.org/cgi-bin/gitweb.cgi?p=gpgme.git;a=blob;f=src/gpgme-tool.c;hb=HEAD
+.. _Popen: http://docs.python.org/py3k/library/subprocess.html#subprocess.Popen
+.. _sendmsg: http://docs.python.org/dev/library/socket.html#socket.socket.sendmsg
+.. _recvmsg: http://docs.python.org/dev/library/socket.html#socket.socket.recvmsg
 .. _Git: http://git-scm.com/
 .. _homepage: http://blog.tremily.us/posts/pgp-mime/
 .. _wrappers and pinentry program: http://blog.tremily.us/posts/gpg-agent/
