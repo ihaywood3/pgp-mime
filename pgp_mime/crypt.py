@@ -317,7 +317,9 @@ def verify_bytes(data, signature=None, always_trust=False):
       public key algorithm: RSA
       hash algorithm: SHA1
 
-    Data signed by a subkey returns the subkey fingerprint.
+    Data signed by a subkey returns the subkey fingerprint.  To find
+    the primary key for a given subkey, use
+    ``pgp_mime.key.lookup_keys()``.
 
     >>> b = '\n'.join([
     ...     '-----BEGIN PGP MESSAGE-----',
