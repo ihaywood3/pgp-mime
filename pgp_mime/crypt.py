@@ -46,8 +46,10 @@ def connect(client, filename, **kwargs):
     return socket
 
 def get_client(**kwargs):
-    client = _client.AssuanClient(name='pgp-mime', close_on_disconnect=True)
-    client.logger.setLevel(_LOG.level)
+    logger = _logging.getLogger('{}.{}'.format(_LOG.name, 'pyassuan'))
+    client = _client.AssuanClient(
+        name='pgp-mime', logger=logger, use_sublogger=False,
+        close_on_disconnect=True)
     socket = connect(client, '~/src/gpgme/build/src/gpgme-tool', **kwargs)
     #socket = connect(client, '~/.assuan/S.gpgme-tool', **kwargs)
     return (client, socket)
