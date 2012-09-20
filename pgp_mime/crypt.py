@@ -115,6 +115,14 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
     ...     recipients=['pgp-mime@invalid.com'], always_trust=True)
     ... # doctest: +ELLIPSIS
     b'-----BEGIN PGP MESSAGE-----\n...-----END PGP MESSAGE-----\n'
+
+    Sign and encrypt with a specific subkey:
+
+    >>> sign_and_encrypt_bytes(
+    ...     bytes(b'Hello'), signers=['0x2F73DE2E'],
+    ...     recipients=['pgp-mime@invalid.com'], always_trust=True)
+    ... # doctest: +ELLIPSIS
+    b'-----BEGIN PGP MESSAGE-----\n...-----END PGP MESSAGE-----\n'
     """
     input_read,input_write = _os.pipe()
     output_read,output_write = _os.pipe()
@@ -308,6 +316,62 @@ def verify_bytes(data, signature=None, always_trust=False):
       validity reason: success
       public key algorithm: RSA
       hash algorithm: SHA1
+
+    Data signed by a subkey returns the subkey fingerprint.
+
+    >>> b = '\n'.join([
+    ...     '-----BEGIN PGP MESSAGE-----',
+    ...     'Version: GnuPG v2.0.19 (GNU/Linux)',
+    ...     '',
+    ...     'hQEMAxcQCLovc94uAQf9ErTZnr0lYRlLLZIk1VcpNNTHrMro+BmqpFC0jprA4/2m',
+    ...     '92klBF4TIS1A9bU5oxzQquaAIDV42P3sXrbxu/YhHLmPGH+dc2JVSfPLL0XOL5GC',
+    ...     'qpQYe5lglRBReFSRktrfhukjHBoXvh3c8T4xYK2r+nIV4gsp+FrSQMIOdhhBoC36',
+    ...     'U1MOk+R+I0JDbWdzZzJONs7ZcAcNDVKqxmAXZUqVgkhPpnGBSBuF9ExKRT3S6e5N',
+    ...     'Rsorb/DjGIUHSZuH2EaWAUz1jJ3nSta7TnveT/avfJiAV7cRS4oVgyyFyuHO5gkI',
+    ...     'o0obeJaut3enVgpq2TUUk0M4L8TX4jjKvDGAYNyuPNLAsQFHLj5eLmJSudGStWuA',
+    ...     'WjKLqBHD0M8/OcwnrTMleJl+h50ZsHO1tvvkXelH+w/jD5SMS+ktxq2Te8Vj7BmM',
+    ...     '0WQn3Ys7ViA5PgcSpbqNNLdgc1EMcpPI/sfJAORPKVWRPBKDXX/irY2onAMSe5gH',
+    ...     'teNX6bZd/gaoLWqD/1ZhsOCnlV7LY1R929TJ9vxnJcfKKAKwBDfAaSbecUUMECVw',
+    ...     's4u3ZT1pmNslBmH6XSy3ifLYWu/2xsJuhPradT88BJOBARMGg81gOE6zxGRrMLJa',
+    ...     'KojFgqaF2y4nlZAyaJ1Ld4qCaoQogaL9qE1BbmgtBehZ2FNQiIBSLC0fUUl8A4Py',
+    ...     '4d9ZxUoSp7nZmgTN5pUH1N9DIC4ntp/Rak2WnpS7+dRPlp9A2SF0RkeLY+JD9gNm',
+    ...     'j44zBkI79KlgaE/cMt6xUXAF/1ZR/Hv/6GUazGx0l23CnSGuqzLpex2uKOxfKiJt',
+    ...     'jfgyZRhIdFJnRuEXt8dTTDiiYA==',
+    ...     '=0o+x',
+    ...     '-----END PGP MESSAGE-----',
+    ...     '',
+    ...     ]).encode('us-ascii')
+    >>> output,verified,signatures = verify_bytes(b)
+    >>> output
+    b'Hello'
+    >>> verified
+    False
+    >>> for s in signatures:
+    ...     print(s.dumps())
+    ... # doctest: +REPORT_UDIFF
+    DECC812C8795ADD60538B0CD171008BA2F73DE2E signature:
+      summary:
+        CRL missing: False
+        CRL too old: False
+        bad policy: False
+        green: False
+        key expired: False
+        key missing: False
+        key revoked: False
+        red: False
+        signature expired: False
+        system error: False
+        valid: False
+      status: success
+      timestamp: Thu Sep 20 15:29:28 2012
+      expiration timestamp: None
+      wrong key usage: False
+      pka trust: not available
+      chain model: False
+      validity: unknown
+      validity reason: success
+      public key algorithm: RSA
+      hash algorithm: SHA256
     """
     input_read,input_write = _os.pipe()
     pass_fds = [input_read]
