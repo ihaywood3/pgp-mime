@@ -26,6 +26,7 @@ from pyassuan import client as _client
 from pyassuan import common as _common
 
 from . import LOG as _LOG
+from . import signature as _signature
 
 
 def connect(client, filename, **kwargs):
@@ -230,35 +231,37 @@ def verify_bytes(data, signature=None, always_trust=False):
     ...     '-----END PGP MESSAGE-----',
     ...     '',
     ...     ]).encode('us-ascii')
-    >>> output,verified,result = verify_bytes(b)
+    >>> output,verified,signatures = verify_bytes(b)
     >>> output
     b'Success!\n'
     >>> verified
     False
-    >>> print(str(result, 'utf-8').replace('\x00', ''))
+    >>> for s in signatures:
+    ...     print(s.dumps())
     ... # doctest: +REPORT_UDIFF
-    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <gpgme>
-      <verify-result>
-        <signatures>
-          <signature>
-            <summary value="0x0" />
-            <fpr>B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3</fpr>
-            <status value="0x0">Success &lt;Unspecified source&gt;</status>
-            <timestamp unix="1332357237i" />
-            <exp-timestamp unix="0i" />
-            <wrong-key-usage value="0x0" />
-            <pka-trust value="0x0" />
-            <chain-model value="0x0" />
-            <validity value="0x0" />
-            <validity-reason value="0x0">Success &lt;Unspecified source&gt;</validity-reason>
-            <pubkey-algo value="0x1">RSA</pubkey-algo>
-            <hash-algo value="0x8">SHA256</hash-algo>
-          </signature>
-        </signatures>
-      </verify-result>
-    </gpgme>
-    <BLANKLINE>
+    B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3 signature:
+      summary:
+        CRL missing: False
+        CRL too old: False
+        bad policy: False
+        green: False
+        key expired: False
+        key missing: False
+        key revoked: False
+        red: False
+        signature expired: False
+        system error: False
+        valid: False
+      status: success
+      timestamp: Wed Mar 21 19:13:57 2012
+      expiration timestamp: None
+      wrong key usage: False
+      pka trust: not available
+      chain model: False
+      validity: unknown
+      validity reason: success
+      public key algorithm: RSA
+      hash algorithm: SHA256
     >>> b = b'Success!\n'
     >>> signature = '\n'.join([
     ...     '-----BEGIN PGP SIGNATURE-----',
@@ -274,35 +277,37 @@ def verify_bytes(data, signature=None, always_trust=False):
     ...     '-----END PGP SIGNATURE-----',
     ...     '',
     ...     ]).encode('us-ascii')
-    >>> output,verified,result = verify_bytes(b, signature=signature)
+    >>> output,verified,signatures = verify_bytes(b, signature=signature)
     >>> output
     b'Success!\n'
     >>> verified
     False
-    >>> print(str(result, 'utf-8').replace('\x00', ''))
+    >>> for s in signatures:
+    ...     print(s.dumps())
     ... # doctest: +REPORT_UDIFF
-    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <gpgme>
-      <verify-result>
-        <signatures>
-          <signature>
-            <summary value="0x0" />
-            <fpr>B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3</fpr>
-            <status value="0x0">Success &lt;Unspecified source&gt;</status>
-            <timestamp unix="1332358207i" />
-            <exp-timestamp unix="0i" />
-            <wrong-key-usage value="0x0" />
-            <pka-trust value="0x0" />
-            <chain-model value="0x0" />
-            <validity value="0x0" />
-            <validity-reason value="0x0">Success &lt;Unspecified source&gt;</validity-reason>
-            <pubkey-algo value="0x1">RSA</pubkey-algo>
-            <hash-algo value="0x2">SHA1</hash-algo>
-          </signature>
-        </signatures>
-      </verify-result>
-    </gpgme>
-    <BLANKLINE>
+    B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3 signature:
+      summary:
+        CRL missing: False
+        CRL too old: False
+        bad policy: False
+        green: False
+        key expired: False
+        key missing: False
+        key revoked: False
+        red: False
+        signature expired: False
+        system error: False
+        valid: False
+      status: success
+      timestamp: Wed Mar 21 19:30:07 2012
+      expiration timestamp: None
+      wrong key usage: False
+      pka trust: not available
+      chain model: False
+      validity: unknown
+      validity reason: success
+      public key algorithm: RSA
+      hash algorithm: SHA1
     """
     input_read,input_write = _os.pipe()
     pass_fds = [input_read]
@@ -320,7 +325,8 @@ def verify_bytes(data, signature=None, always_trust=False):
         _os.close(message_read)
     else:
         _os.close(output_write)
-    verified = result = None
+    verified = None
+    signatures = []
     try:
         hello(client)
         client.make_request(
@@ -348,15 +354,16 @@ def verify_bytes(data, signature=None, always_trust=False):
         else:
             plain = _read(output_read)
         rs,result = client.make_request(_common.Request('RESULT'))
+        signatures = list(_signature.verify_result_signatures(result))
         verified = True
-        for line in result.splitlines():
-            if b'<status ' in line and b'Success' not in line:
+        for signature in signatures:
+            if signature.status != 'success':
                 verified = False
-            elif b'<pka-trust' in line and b'0x2' not in line:
+            elif signature.pka_trust != 'good':
                 verified = False
     finally:
         disconnect(client, socket)
         for fd in [input_write, message_write, output_read]:
             if fd >= 0:
                 _os.close(fd)
-    return (plain, verified, result)
+    return (plain, verified, signatures)
