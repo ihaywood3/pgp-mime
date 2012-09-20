@@ -54,7 +54,7 @@ def lookup_keys(patterns=None, load=False):
         _crypt.hello(client)
         if load:
             client.make_request(_common.Request('KEYLIST', *args))
-            rs,result = client.make_request(_common.Request('RESULT', *args))
+            rs,result = client.make_request(_common.Request('RESULT'))
         else:
             rs,result = client.make_request(_common.Request('KEYLIST', *args))
     finally:
