@@ -21,7 +21,6 @@ See the `GPGME manual`_ for details.
 .. GPGME manual: http://www.gnupg.org/documentation/manuals/gpgme/Verify.html
 """
 
-import pprint as _pprint
 import time as _time
 import xml.etree.ElementTree as _etree
 
