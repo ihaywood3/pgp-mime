@@ -158,6 +158,7 @@ class Signature (object):
     _validity_enum_inv = dict((v,k) for k,v in _validity_enum.items())
 
     _public_key_algorithm_enum = {  # GPGME_PK_* in gpgme.h
+        0: 'none',
         1: 'RSA',      # Rivest, Shamir, Adleman
         2: 'RSA for encryption and decryption only',
         3: 'RSA for signing and verification only',
