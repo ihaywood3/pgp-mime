@@ -449,7 +449,7 @@ def verify(message):
     >>> for s in signatures:
     ...     print(s.dumps())  # doctest: +REPORT_UDIFF
     ... # doctest: +REPORT_UDIFF, +ELLIPSIS
-    B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3 signature:
+    DECC812C8795ADD60538B0CD171008BA2F73DE2E signature:
       summary:
         CRL missing: False
         CRL too old: False
@@ -504,7 +504,7 @@ def verify(message):
     >>> for s in signatures:
     ...     print(s.dumps())  # doctest: +REPORT_UDIFF
     ... # doctest: +REPORT_UDIFF, +ELLIPSIS
-    B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3 signature:
+    DECC812C8795ADD60538B0CD171008BA2F73DE2E signature:
       summary:
         CRL missing: False
         CRL too old: False
