@@ -264,7 +264,7 @@ class Signature (object):
         self.public_key_algorithm = self._public_key_algorithm_enum[value]
 
     def get_public_key_algorithm(self):
-        return self._error_pubkey_algorithm_inv[self.public_key_algorithm]
+        return self._public_key_algorithm_inv[self.public_key_algorithm]
 
     def set_hash_algorithm(self, value):
         self.hash_algorithm = self._hash_algorithm_enum[value]
