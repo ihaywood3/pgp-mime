@@ -1,5 +1,6 @@
 # Copyright
 
+import functools as _functools
 import xml.etree.ElementTree as _etree
 
 from . import LOG as _LOG
@@ -10,20 +11,124 @@ import logging
 from pyassuan import common as _common
 
 
-class Key (object):
+@_functools.total_ordering
+class SubKey (object):
+    """The crypographic key portion of an OpenPGP key.
+    """
     def __init__(self, fingerprint=None):
         self.fingerprint = fingerprint
-        # more data to come once gpgme-tool gets keylist XML support
 
     def __str__(self):
-        return '<{} {}>'.format(self.__class__.__name__, self.fingerprint[-8:])
+        return '<{} {}>'.format(type(self).__name__, self.fingerprint[-8:])
 
     def __repr__(self):
         return str(self)
 
+    def __eq__(self, other):
+        if self.fingerprint and hasattr(other, 'fingerprint'):
+            return self.fingerprint == other.fingerprint
+        return id(self) == id(other)
 
-def lookup_keys(patterns=None, load=False):
+    def __lt__(self, other):
+        if self.fingerprint and hasattr(other, 'fingerprint'):
+            return self.fingerprint < other.fingerprint
+        return id(self) < id(other)
+
+    def __hash__(self):
+        return int(self.fingerprint, 16)
+
+
+@_functools.total_ordering
+class UserID (object):
+    def __init__(self, uid=None, name=None, email=None, comment=None):
+        self.uid = uid
+        self.name = name
+        self.email = email
+        self.comment = comment
+
+    def __str__(self):
+        return '<{} {}>'.format(type(self).__name__, self.name)
+
+    def __repr__(self):
+        return str(self)
+
+    def __eq__(self, other):
+        if self.uid and hasattr(other, 'uid'):
+            return self.uid == other.uid
+        return id(self) == id(other)
+
+    def __lt__(self, other):
+        if self.uid and hasattr(other, 'uid'):
+            return self.uid < other.uid
+        return id(self) < id(other)
+
+    def __hash__(self):
+        return hash(self.uid)
+
+
+@_functools.total_ordering
+class Key (object):
+    def __init__(self, subkeys=None, uids=None):
+        revoked = False
+        expired = False
+        disabled = False
+        invalid = False
+        can_encrypt = False
+        can_sign = False
+        can_certify = False
+        can_authenticate = False
+        is_qualified = False
+        secret = False
+        protocol = None
+        issuer = None
+        chain_id = None
+        owner_trust = None
+        if subkeys is None:
+            subkeys = []
+        self.subkeys = subkeys
+        if uids is None:
+            uids = []
+        self.uids = uids
+
+    def __str__(self):
+        return '<{} {}>'.format(
+            type(self).__name__, self.subkeys[0].fingerprint[-8:])
+
+    def __repr__(self):
+        return str(self)
+
+    def __eq__(self, other):
+        other_subkeys = getattr(other, 'subkeys', None)
+        if self.subkeys and other_subkeys:
+            return self.subkeys[0] == other.subkeys[0]
+        return id(self) == id(other)
+
+    def __lt__(self, other):
+        other_subkeys = getattr(other, 'subkeys', None)
+        if self.subkeys and other_subkeys:
+            return self.subkeys[0] < other.subkeys[0]
+        return id(self) < id(other)
+
+    def __hash__(self):
+        return int(self.fingerprint, 16)
+
+
+def lookup_keys(patterns=None):
     """Lookup keys matching any patterns listed in ``patterns``.
+
+    >>> import pprint
+
+    >>> key = list(lookup_keys(['pgp-mime-test']))[0]
+    >>> key
+    <Key 4332B6E3>
+    >>> key.subkeys
+    [<SubKey 4332B6E3>, <SubKey 2F73DE2E>]
+    >>> key.uids
+    [<UserID pgp-mime-test>]
+    >>> key.can_encrypt
+    True
+    >>> key.protocol
+    'OpenPGP'
 
     >>> print(list(lookup_keys(['pgp-mime-test'])))
     [<Key 4332B6E3>]
@@ -35,15 +140,8 @@ def lookup_keys(patterns=None, load=False):
     [<Key 4332B6E3>]
     >>> print(list(lookup_keys()))  # doctest: +ELLIPSIS
     [..., <Key 4332B6E3>, ...]
-
-    >>> key = lookup_keys(['2F73DE2E'], load=True)
-    >>> print(list(key)[0])
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: gpgme-tool doesn't return keylist data
     """
     _LOG.debug('lookup key: {}'.format(patterns))
-    pyassuan.LOG.setLevel(logging.DEBUG)
     client,socket = _crypt.get_client()
     parameters = []
     if patterns:
@@ -52,36 +150,79 @@ def lookup_keys(patterns=None, load=False):
         args = []
     try:
         _crypt.hello(client)
-        if load:
-            client.make_request(_common.Request('KEYLIST', *args))
-            rs,result = client.make_request(_common.Request('RESULT'))
-        else:
-            rs,result = client.make_request(_common.Request('KEYLIST', *args))
+        rs,result = client.make_request(_common.Request('KEYLIST', *args))
     finally:
         _crypt.disconnect(client, socket)
-    if load:
-        tag_mapping = {
-            'fpr': 'fingerprint',
-            }
-        tree = _etree.fromstring(result.replace(b'\x00', b''))
-        if list(tree.findall('.//truncated')):
-            raise NotImplementedError("gpgme-tool doesn't return keylist data")
-        for signature in tree.findall('.//key'):
-            key = Key()
-            for child in signature.iter():
-                if child == signature:  # iter() includes the root element
-                    continue
-                attribute = tag_mapping.get(
-                    child.tag, child.tag.replace('-', '_'))
-                if child.tag in ['fpr']:
-                    value = child.text
-                else:
-                    raise NotImplementedError(child.tag)
-                setattr(s, attribute, value)
-            yield key
-    else:
-        for line in result.splitlines():
-            line = str(line, 'ascii')
-            assert line.startswith('key:'), result
-            fingerprint = line.split(':', 1)[1]
-            yield Key(fingerprint=fingerprint)
+    tag_mapping = {
+        }
+    tree = _etree.fromstring(result.replace(b'\x00', b''))
+    for key in tree.findall('.//key'):
+        k = Key()
+        for child in key:
+            attribute = tag_mapping.get(
+                child.tag, child.tag.replace('-', '_'))
+            if child.tag in [
+                'revoked', 'expired', 'disabled', 'invalid', 'can-encrypt',
+                'can-sign', 'can-certify', 'can-authenticate', 'is-qualified',
+                'secret', 'revoked']:
+                # boolean values
+                value = child.get('value')
+                if not value.startswith('0x'):
+                    raise NotImplementedError('{} value {}'.format(
+                            child.tag, value))
+                value = int(value, 16)
+                value = bool(value)
+            elif child.tag in [
+                'protocol', 'owner-trust']:
+                value = child.text
+            elif child.tag in ['issuer', 'chain-id']:
+                # ignore for now
+                pass
+            elif child.tag in ['subkeys', 'uids']:
+                parser = globals()['_parse_{}'.format(attribute)]
+                value = parser(child)
+            else:
+                raise NotImplementedError(child.tag)
+            setattr(k, attribute, value)
+        yield k
+
+def _parse_subkeys(element):
+    tag_mapping = {
+        'fpr': 'fingerprint',
+        }
+    subkeys = []
+    for subkey in element:
+        s = SubKey()
+        for child in subkey.iter():
+            if child == subkey:  # iter() includes the root element
+                continue
+            attribute = tag_mapping.get(
+                child.tag, child.tag.replace('-', '_'))
+            if child.tag in [
+                'fpr']:
+                value = child.text
+            else:
+                raise NotImplementedError(child.tag)
+            setattr(s, attribute, value)
+        subkeys.append(s)
+    return subkeys
+
+def _parse_uids(element):
+    tag_mapping = {
+        }
+    uids = []
+    for uid in element:
+        u = UserID()
+        for child in uid.iter():
+            if child == uid:  # iter() includes the root element
+                continue
+            attribute = tag_mapping.get(
+                child.tag, child.tag.replace('-', '_'))
+            if child.tag in [
+                'uid', 'name', 'email', 'comment']:
+                value = child.text
+            else:
+                raise NotImplementedError(child.tag)
+            setattr(u, attribute, value)
+        uids.append(u)
+    return uids
