@@ -125,6 +125,8 @@ def lookup_keys(patterns=None):
     [<SubKey 4332B6E3>, <SubKey 2F73DE2E>]
     >>> key.uids
     [<UserID pgp-mime-test>]
+    >>> key.uids[0].uid
+    'pgp-mime-test (http://blog.tremily.us/posts/pgp-mime/) <pgp-mime@invalid.com>'
     >>> key.can_encrypt
     True
     >>> key.protocol
