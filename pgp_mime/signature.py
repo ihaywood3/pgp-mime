@@ -374,7 +374,8 @@ def verify_result_signatures(result):
                              'hash-algo']:
                 value = child.get('value')
                 if not value.startswith('0x'):
-                    raise NotImplementedError('summary value {}'.format(value))
+                    raise NotImplementedError('{} value {}'.format(
+                            child.tag, value))
                 value = int(value, 16)
                 if attribute in ['wrong_key_usage', 'chain_model']:
                     value = bool(value)  # boolean
