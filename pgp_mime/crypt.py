@@ -93,7 +93,7 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
                            allow_default_signer=False):
     r"""Sign ``data`` with ``signers`` and encrypt to ``recipients``.
 
-    Just sign:
+    Just sign (with a detached signature):
 
     >>> print(sign_and_encrypt_bytes(
     ...     bytes(b'Hello'), signers=['pgp-mime@invalid.com']))
