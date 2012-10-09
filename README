@@ -24,7 +24,7 @@ Dependencies
 ------------
 
 ``pgp-mime`` is a simple package with no external dependencies outside
-the Python 3 standard library.  There are a number of GnuPG_ wrappers
+the Python 3.3 standard library.  There are a number of GnuPG_ wrappers
 for python `out there`__, but none of them seem mature/stable enough
 to be worth installing.  Instead, we use the `pyassuan`_ module to
 talk to `gpgme-tool`_ over pipes or sockets.  If this isn't working
@@ -33,10 +33,11 @@ the cryptography.
 
 __ wrappers_
 
-It would be awkward to backport ``pgp-mime`` to Python 2.7, because we
-take advantage of the ``pass_fds`` argument to Popen_ to pass file
-descriptors to the child `gpgme-tool` processes.  Once we get to
-Python 3.3, we'll use sendmsg_ and recvmsg_ instead.
+It would be awkward to backport ``pgp-mime`` to earlier versions of
+Python, because versions before Python 3.3 lack sendmsg_ and recvmsg_,
+and Python 2.7 doesn't even have that pass_fds option for Popen.  This
+makes it much harder to pass file descriptors to the `gpgme-tool`
+process.
 
 Installing by hand
 ------------------

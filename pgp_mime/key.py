@@ -144,7 +144,7 @@ def lookup_keys(patterns=None):
     [..., <Key 4332B6E3>, ...]
     """
     _LOG.debug('lookup key: {}'.format(patterns))
-    client,socket = _crypt.get_client()
+    client = _crypt.get_client()
     parameters = []
     if patterns:
         args = [' '.join(patterns)]
@@ -154,7 +154,7 @@ def lookup_keys(patterns=None):
         _crypt.hello(client)
         rs,result = client.make_request(_common.Request('KEYLIST', *args))
     finally:
-        _crypt.disconnect(client, socket)
+        _crypt.disconnect(client)
     tag_mapping = {
         }
     tree = _etree.fromstring(result.replace(b'\x00', b''))
