@@ -145,6 +145,11 @@ if __name__ == '__main__':
         for attachment in args.attachment:
             body.attach(load_attachment(
                     filename=attachment, encoding=args.encoding))
+
+    config = _configparser.ConfigParser()
+    config.read(args.config)
+    client_params = _pgp_mime.get_client_params(config)
+
     if args.sign_as:
         signers = [args.sign_as]
     else:
@@ -152,13 +157,14 @@ if __name__ == '__main__':
     if 'encrypt' in args.mode:
         recipients = [email for name,email in _pgp_mime.email_targets(header)]
     if args.mode == 'sign':
-        body = _pgp_mime.sign(body, signers=signers, allow_default_signer=True)
+        body = _pgp_mime.sign(
+            body, signers=signers, allow_default_signer=True, **client_params)
     elif args.mode == 'encrypt':
-        body = _pgp_mime.encrypt(body, recipients=recipients)
+        body = _pgp_mime.encrypt(body, recipients=recipients, **client_params)
     elif args.mode == 'sign-encrypt':
         body = _pgp_mime.sign_and_encrypt(
             body, signers=signers, recipients=recipients,
-            allow_default_signer=True)
+            allow_default_signer=True, **client_params)
     elif args.mode == 'plain':
         pass
     else:
@@ -168,10 +174,8 @@ if __name__ == '__main__':
     if args.output:
         print(message.as_string())
     else:
-        config = _configparser.ConfigParser()
-        config.read(args.config)
-        params = _pgp_mime.get_smtp_params(config)
-        smtp = _pgp_mime.get_smtp(*params)
+        smtp_params = _pgp_mime.get_smtp_params(config)
+        smtp = _pgp_mime.get_smtp(*smtp_params)
         try:
             _pgp_mime.mail(message, smtp)
         finally:

@@ -113,7 +113,7 @@ class Key (object):
         return int(self.fingerprint, 16)
 
 
-def lookup_keys(patterns=None):
+def lookup_keys(patterns=None, **kwargs):
     """Lookup keys matching any patterns listed in ``patterns``.
 
     >>> import pprint
@@ -144,7 +144,7 @@ def lookup_keys(patterns=None):
     [..., <Key 4332B6E3>, ...]
     """
     _LOG.debug('lookup key: {}'.format(patterns))
-    client = _crypt.get_client()
+    client = _crypt.get_client(**kwargs)
     parameters = []
     if patterns:
         args = [' '.join(patterns)]

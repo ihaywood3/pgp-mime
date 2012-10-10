@@ -30,6 +30,7 @@ LOG.setLevel(_logging.ERROR)
 LOG.addHandler(_logging.StreamHandler())
 
 
+from .crypt import get_client_params
 from .pgp import sign, encrypt, sign_and_encrypt, decrypt, verify
 from .email import (
     header_from_text, guess_encoding, encodedMIMEText, strip_bcc, append_text,

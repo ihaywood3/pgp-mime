@@ -27,7 +27,7 @@ from .email import email_targets as _email_targets
 from .email import strip_bcc as _strip_bcc
 
 
-def sign(message, signers=None, allow_default_signer=False):
+def sign(message, signers=None, **kwargs):
     r"""Sign a ``Message``, returning the signed version.
 
     multipart/signed
@@ -107,9 +107,7 @@ def sign(message, signers=None, allow_default_signer=False):
     """
     body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
     # use email.policy.SMTP once we get Python 3.3
-    signature = str(_sign_and_encrypt_bytes(
-            data=body, signers=signers,
-            allow_default_signer=allow_default_signer), 'us-ascii')
+    signature = str(_sign_and_encrypt_bytes(data=body, **kwargs), 'us-ascii')
     sig = _MIMEApplication(
         _data=signature,
         _subtype='pgp-signature; name="signature.asc"',
@@ -124,7 +122,7 @@ def sign(message, signers=None, allow_default_signer=False):
     msg['Content-Disposition'] = 'inline'
     return msg
 
-def encrypt(message, recipients=None, always_trust=True):
+def encrypt(message, recipients=None, **kwargs):
     r"""Encrypt a ``Message``, returning the encrypted version.
 
     multipart/encrypted
@@ -197,8 +195,7 @@ def encrypt(message, recipients=None, always_trust=True):
         recipients = [email for name,email in _email_targets(message)]
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
     encrypted = str(_sign_and_encrypt_bytes(
-            data=body, recipients=recipients,
-            always_trust=always_trust), 'us-ascii')
+            data=body, recipients=recipients, **kwargs), 'us-ascii')
     enc = _MIMEApplication(
         _data=encrypted,
         _subtype='octet-stream; name="encrypted.asc"',
@@ -219,8 +216,7 @@ def encrypt(message, recipients=None, always_trust=True):
     msg['Content-Disposition'] = 'inline'
     return msg
 
-def sign_and_encrypt(message, signers=None, recipients=None,
-                     always_trust=False, allow_default_signer=False):
+def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     r"""Sign and encrypt a ``Message``, returning the encrypted version.
 
     multipart/encrypted
@@ -295,10 +291,10 @@ def sign_and_encrypt(message, signers=None, recipients=None,
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
-    encrypted = str(_sign_and_encrypt_bytes(
-            data=body, signers=signers, recipients=recipients,
-            always_trust=always_trust,
-            allow_default_signer=allow_default_signer), 'us-ascii')
+    encrypted = str(
+        _sign_and_encrypt_bytes(
+            data=body, signers=signers, recipients=recipients, **kwargs),
+        'us-ascii')
     enc = _MIMEApplication(
         _data=encrypted,
         _subtype='octet-stream; name="encrypted.asc"',
@@ -372,7 +368,7 @@ def _get_signed_parts(message):
         raise ValueError('missing application/pgp-signature part')
     return (body, signature)
 
-def decrypt(message):
+def decrypt(message, **kwargs):
     r"""Decrypt a multipart/encrypted message.
 
     >>> from pgp_mime.email import encodedMIMEText
@@ -422,10 +418,10 @@ def decrypt(message):
     encrypted = body.get_payload(decode=True)
     if not isinstance(encrypted, bytes):
         encrypted = encrypted.encode('us-ascii')
-    decrypted,verified,result = _verify_bytes(encrypted)
+    decrypted,verified,result = _verify_bytes(encrypted, **kwargs)
     return _message_from_bytes(decrypted)
 
-def verify(message):
+def verify(message, **kwargs):
     r"""Verify a signature on ``message``, possibly decrypting first.
 
     >>> from pgp_mime.email import encodedMIMEText
@@ -623,6 +619,6 @@ def verify(message):
         sig_data = sig_data.encode('us-ascii')
     decrypted,verified,result = _verify_bytes(
         body.as_string().encode('us-ascii').replace(b'\n', b'\r\n'),
-        signature=sig_data)
+        signature=sig_data, **kwargs)
     # use email.policy.SMTP once we get Python 3.3
     return (_copy.deepcopy(body), verified, result)

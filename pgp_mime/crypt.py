@@ -26,12 +26,41 @@ from . import LOG as _LOG
 from . import signature as _signature
 
 
-def get_client(**kwargs):
+SOCKET_PATH = _os_path.expanduser(_os_path.join('~', '.gnupg', 'S.gpgme-tool'))
+
+
+def get_client_params(config):
+    r"""Retrieve Assuan client paramters from a config file.
+
+    >>> from configparser import ConfigParser
+    >>> config = ConfigParser()
+    >>> config.read_string('\n'.join([
+    ...             '[gpgme-tool]',
+    ...             'socket-path: /tmp/S.gpgme-tool',
+    ...             ]))
+    >>> get_client_params(config)
+    {'socket_path': '/tmp/S.gpgme-tool'}
+    >>> config = ConfigParser()
+    >>> get_smtp_params(ConfigParser())
+    {'socket_path': None}
+    """
+    params = {'socket_path': None}
+    try:
+        params['socket_path'] = config.get('gpgme-tool', 'socket-path')
+    except _configparser.NoSectionError:
+        return params
+    except _configparser.NoOptionError:
+        pass
+    return params
+
+def get_client(socket_path=None):
+    if socket_path is None:
+        socket_path = socket_path
     logger = _logging.getLogger('{}.{}'.format(_LOG.name, 'pyassuan'))
     client = _client.AssuanClient(
         name='pgp-mime', logger=logger, use_sublogger=False,
         close_on_disconnect=True)
-    client.connect(socket_path='/tmp/gpgme-tool.sock')
+    client.connect(socket_path=socket_path)
     return client
 
 def disconnect(client):
@@ -63,7 +92,7 @@ def _write(fd, data):
 
 def sign_and_encrypt_bytes(data, signers=None, recipients=None,
                            always_trust=False, mode='detach',
-                           allow_default_signer=False):
+                           allow_default_signer=False, **kwargs):
     r"""Sign ``data`` with ``signers`` and encrypt to ``recipients``.
 
     Just sign (with a detached signature):
@@ -99,7 +128,7 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
     """
     input_read,input_write = _os.pipe()
     output_read,output_write = _os.pipe()
-    client = get_client()
+    client = get_client(**kwargs)
     try:
         hello(client)
         if signers:
@@ -142,7 +171,7 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
                 _os.close(fd)
     return d
 
-def decrypt_bytes(data):
+def decrypt_bytes(data, **kwargs):
     r"""Decrypt ``data``.
 
     >>> b = '\n'.join([
@@ -166,7 +195,7 @@ def decrypt_bytes(data):
     """
     input_read,input_write = _os.pipe()
     output_read,output_write = _os.pipe()
-    client = get_client()
+    client = get_client(**kwargs)
     try:
         hello(client)
         client.send_fds([input_read])
@@ -189,7 +218,7 @@ def decrypt_bytes(data):
                 _os.close(fd)
     return d
 
-def verify_bytes(data, signature=None, always_trust=False):
+def verify_bytes(data, signature=None, always_trust=False, **kwargs):
     r"""Verify a signature on ``data``, possibly decrypting first.
 
     These tests assume you didn't trust the distributed test key.
@@ -359,7 +388,7 @@ def verify_bytes(data, signature=None, always_trust=False):
     else:
         message_read = message_write = -1
         output_read,output_write = _os.pipe()
-    client = get_client()
+    client = get_client(**kwargs)
     verified = None
     signatures = []
     try:
