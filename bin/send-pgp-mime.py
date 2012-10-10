@@ -92,8 +92,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description = doc_lines[0],
         epilog = '\n'.join(doc_lines[1:]).strip(),
-        version=_pgp_mime.__version__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version='%(prog)s {}'.format(_pgp_mime.__version__))
     parser.add_argument(
         '-e', '--encoding', metavar='ENCODING', default='utf-8',
         help='encoding for input files')
