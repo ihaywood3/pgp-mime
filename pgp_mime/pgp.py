@@ -17,8 +17,11 @@
 import copy as _copy
 from email import message_from_bytes as _message_from_bytes
 from email.encoders import encode_7or8bit as _encode_7or8bit
+from email.generator import BytesGenerator as _BytesGenerator
 from email.mime.application import MIMEApplication as _MIMEApplication
 from email.mime.multipart import MIMEMultipart as _MIMEMultipart
+from email import policy as _email_policy
+import io as _io
 
 from . import LOG as _LOG
 from .crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
@@ -26,6 +29,19 @@ from .crypt import verify_bytes as _verify_bytes
 from .email import email_targets as _email_targets
 from .email import strip_bcc as _strip_bcc
 
+
+def _flatten(message):
+    r"""Flatten a message to bytes.
+
+    >>> from pgp_mime.email import encodedMIMEText
+    >>> message = encodedMIMEText('Hi\nBye')
+    >>> _flatten(message)  # doctest: +ELLIPSIS
+    b'Content-Type: text/plain; charset="us-ascii"\r\nMIME-Version: ...'
+    """
+    bytesio = _io.BytesIO()
+    generator = _BytesGenerator(bytesio, policy=_email_policy.SMTP)
+    generator.flatten(message)
+    return bytesio.getvalue()
 
 def sign(message, signers=None, **kwargs):
     r"""Sign a ``Message``, returning the signed version.
@@ -105,8 +121,7 @@ def sign(message, signers=None, **kwargs):
     <BLANKLINE>
     --boundsep--
     """
-    body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
-    # use email.policy.SMTP once we get Python 3.3
+    body = _flatten(message)
     signature = str(_sign_and_encrypt_bytes(data=body, **kwargs), 'us-ascii')
     sig = _MIMEApplication(
         _data=signature,
@@ -189,8 +204,7 @@ def encrypt(message, recipients=None, **kwargs):
     <BLANKLINE>
     --boundsep--
     """
-    body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
-    # use email.policy.SMTP once we get Python 3.3
+    body = _flatten(message)
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
@@ -286,8 +300,7 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     --boundsep--
     """
     _strip_bcc(message=message)
-    body = message.as_string().encode('us-ascii').replace(b'\n', b'\r\n')
-    # use email.policy.SMTP once we get Python 3.3
+    body = _flatten(message)
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
         _LOG.debug('extracted encryption recipients: {}'.format(recipients))
@@ -618,7 +631,5 @@ def verify(message, **kwargs):
     if not isinstance(sig_data, bytes):
         sig_data = sig_data.encode('us-ascii')
     decrypted,verified,result = _verify_bytes(
-        body.as_string().encode('us-ascii').replace(b'\n', b'\r\n'),
-        signature=sig_data, **kwargs)
-    # use email.policy.SMTP once we get Python 3.3
+        _flatten(body), signature=sig_data, **kwargs)
     return (_copy.deepcopy(body), verified, result)
