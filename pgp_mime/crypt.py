@@ -55,7 +55,7 @@ def get_client_params(config):
 
 def get_client(socket_path=None):
     if socket_path is None:
-        socket_path = socket_path
+        socket_path = SOCKET_PATH
     logger = _logging.getLogger('{}.{}'.format(_LOG.name, 'pyassuan'))
     client = _client.AssuanClient(
         name='pgp-mime', logger=logger, use_sublogger=False,
