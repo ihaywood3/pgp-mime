@@ -15,6 +15,7 @@
 # pgp-mime.  If not, see <http://www.gnu.org/licenses/>.
 
 import codecs as _codecs
+import configparser as _configparser
 import logging as _logging
 import os as _os
 import os.path as _os_path
