@@ -120,7 +120,7 @@ Run the internal unit tests using nose_::
 If a Python-3-version of ``nosetests`` is not the default on your
 system, you may need to try something like::
 
-  $ nosetests-3.2 --with-doctest --doctest-tests pgp_mime
+  $ nosetests-3.3 --with-doctest --doctest-tests pgp_mime
 
 Licence
 =======
