@@ -42,7 +42,7 @@ def get_client_params(config):
     >>> get_client_params(config)
     {'socket_path': '/tmp/S.gpgme-tool'}
     >>> config = ConfigParser()
-    >>> get_smtp_params(ConfigParser())
+    >>> get_client_params(ConfigParser())
     {'socket_path': None}
     """
     params = {'socket_path': None}
