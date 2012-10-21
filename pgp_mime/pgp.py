@@ -147,7 +147,7 @@ def encrypt(message, recipients=None, **kwargs):
     >>> from pgp_mime.email import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
     >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
-    >>> encrypted = encrypt(message)
+    >>> encrypted = encrypt(message, always_trust=True)
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
@@ -386,7 +386,8 @@ def decrypt(message, **kwargs):
 
     >>> from pgp_mime.email import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> encrypted = encrypt(message, recipients=['<pgp-mime@invalid.com>'])
+    >>> encrypted = encrypt(
+    ...     message, recipients=['<pgp-mime@invalid.com>'], always_trust=True)
     >>> decrypted = decrypt(encrypted)
     >>> print(decrypted.as_string().replace('\r\n', '\n'))
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
