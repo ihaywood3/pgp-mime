@@ -43,7 +43,7 @@ def _flatten(message):
     generator.flatten(message)
     return bytesio.getvalue()
 
-def sign(message, signers=None, **kwargs):
+def sign(message, **kwargs):
     r"""Sign a ``Message``, returning the signed version.
 
     multipart/signed
