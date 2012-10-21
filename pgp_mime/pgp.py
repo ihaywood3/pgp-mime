@@ -54,7 +54,10 @@ def sign(message, **kwargs):
     >>> message = encodedMIMEText('Hi\nBye')
     >>> signed = sign(message, signers=['pgp-mime@invalid.com'])
     >>> signed.set_boundary('boundsep')
-    >>> print(signed.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(signed.as_string().replace(
+    ...     'micalg="pgp-sha1"; protocol="application/pgp-signature"',
+    ...     'protocol="application/pgp-signature"; micalg="pgp-sha1"'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -85,7 +88,10 @@ def sign(message, **kwargs):
     >>> message.attach(encodedMIMEText('Part B'))
     >>> signed = sign(message, signers=['pgp-mime@invalid.com'])
     >>> signed.set_boundary('boundsep')
-    >>> print(signed.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(signed.as_string().replace(
+    ...     'micalg="pgp-sha1"; protocol="application/pgp-signature"',
+    ...     'protocol="application/pgp-signature"; micalg="pgp-sha1"'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -149,7 +155,10 @@ def encrypt(message, recipients=None, **kwargs):
     >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
     >>> encrypted = encrypt(message, always_trust=True)
     >>> encrypted.set_boundary('boundsep')
-    >>> print(encrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(encrypted.as_string().replace(
+    ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
+    ...     'protocol="application/pgp-encrypted"; micalg="pgp-sha1"'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -180,7 +189,10 @@ def encrypt(message, recipients=None, **kwargs):
     >>> encrypted = encrypt(
     ...     message, recipients=['pgp-mime@invalid.com'], always_trust=True)
     >>> encrypted.set_boundary('boundsep')
-    >>> print(encrypted.as_string()) # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(encrypted.as_string().replace(
+    ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
+    ...     'protocol="application/pgp-encrypted"; micalg="pgp-sha1"'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -243,7 +255,10 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     >>> encrypted = sign_and_encrypt(
     ...     message, signers=['pgp-mime@invalid.com'], always_trust=True)
     >>> encrypted.set_boundary('boundsep')
-    >>> print(encrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(encrypted.as_string().replace(
+    ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
+    ...     'protocol="application/pgp-encrypted"; micalg="pgp-sha1"'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
     Content-Disposition: inline
@@ -275,7 +290,10 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     ...     message, signers=['pgp-mime@invalid.com'],
     ...     recipients=['pgp-mime@invalid.com'], always_trust=True)
     >>> encrypted.set_boundary('boundsep')
-    >>> print(encrypted.as_string()) # doctest: +ELLIPSIS, +REPORT_UDIFF
+    >>> print(encrypted.as_string().replace(
+    ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
+    ...     'protocol="application/pgp-encrypted"; micalg="pgp-sha1"'))
+    ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
     Content-Disposition: inline
