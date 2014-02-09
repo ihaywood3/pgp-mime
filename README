@@ -2,7 +2,15 @@ Python module and tools for constructing and sending PGP/MIME email.
 
 The ``pgp_mime`` module makes it easy to construct and dispatch signed
 and/or encrypted email using PGP_ and :RFC:`3156`.  It uses GnuPG_
-(via `gpgme-tool`_) to perform the cryptography.
+(via `gpgme`_) to perform the cryptography.
+
+This module is based on W. Trevor King's ``pgp_mime`` which used ``pyassuan``
+in conjunction with ``gpgme-tool``. However, as the latter isn't usally distributed
+along with ``gpgme``, I replaced the ``crypt.py`` in order to handle
+cryptography with ``pygpgme`` instead.
+
+If you still prefer the original version, please refer to:
+https://pypi.python.org/pypi/pgp-mime/
 
 Installation
 ============
@@ -10,15 +18,7 @@ Installation
 Packages
 --------
 
-Gentoo
-~~~~~~
-
-I've packaged ``pgp-mime`` for Gentoo_.  You need layman_ and
-my `wtk overlay`_.  Install with::
-
-  # emerge -av app-portage/layman
-  # layman --add wtk
-  # emerge -av dev-python/pgp-mime
+TODO: AUR package
 
 Dependencies
 ------------
@@ -26,25 +26,22 @@ Dependencies
 ``pgp-mime`` is a simple package with no external dependencies outside
 the Python 3.3 standard library.  There are a number of GnuPG_ wrappers
 for python `out there`__, but none of them seem mature/stable enough
-to be worth installing.  Instead, we use the `pyassuan`_ module to
-talk to `gpgme-tool`_ over pipes or sockets.  If this isn't working
-for you, you need only replace the ``pgp_mime.crypt`` module to handle
-the cryptography.
+to be worth installing.  Instead, we use the `pygpgme`_ module.
+If this isn't working for you, you need only replace the ``pgp_mime.crypt``
+module to handle the cryptography.
 
 __ wrappers_
 
 It would be awkward to backport ``pgp-mime`` to earlier versions of
 Python, because versions before Python 3.3 lack sendmsg_ and recvmsg_,
-and Python 2.7 doesn't even have that pass_fds option for Popen.  This
-makes it much harder to pass file descriptors to the `gpgme-tool`
-process.
+and Python 2.7 doesn't even have that pass_fds option for Popen.  
 
 Installing by hand
 ------------------
 
 ``pgp-mime`` is available as a Git_ repository::
 
-  $ git clone git://tremily.us/pgp-mime.git
+  $ git clone https://github.com/ValiValpas/pgp-mime
 
 See the homepage_ for details.  To install the checkout, run the
 standard::
@@ -128,17 +125,21 @@ Licence
 This project is distributed under the `GNU General Public License
 Version 3`_ or greater.
 
-Author
+Authors
 ======
 
 W. Trevor King
 wking@tremily.us
+
+Johannes Schlatow
+johannes.schlatow@googlemail.com
 
 .. _PGP: http://en.wikipedia.org/wiki/Pretty_Good_Privacy
 .. _Gentoo: http://www.gentoo.org/
 .. _layman: http://layman.sourceforge.net/
 .. _wtk overlay: http://blog.tremily.us/posts/Gentoo_overlay/
 .. _wrappers: http://wiki.python.org/moin/GnuPrivacyGuard
+.. _pygpgme: https://launchpad.net/pygpgme
 .. _pyassuan: http://blog.tremily.us/posts/pyassuan/
 .. _gpgme-tool:
   http://git.gnupg.org/cgi-bin/gitweb.cgi?p=gpgme.git;a=blob;f=src/gpgme-tool.c;hb=HEAD

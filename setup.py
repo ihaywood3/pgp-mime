@@ -1,3 +1,4 @@
+# Copyright (C) 2014 Johannes Schlatow <johannes.schlatow@googlemail.com>
 # Copyright (C) 2012 W. Trevor King <wking@tremily.us>
 #
 # This file is part of pgp-mime.
@@ -27,10 +28,10 @@ _this_dir = _os_path.dirname(__file__)
 _setup(
     name='pgp-mime',
     version=__version__,
-    maintainer='W. Trevor King',
-    maintainer_email='wking@tremily.us',
-    url='http://blog.tremily.us/posts/pgp-mime/',
-    download_url='http://git.tremily.us/?p=pgp-mime.git;a=snapshot;h=v{};sf=tgz'.format(__version__),
+    maintainer='Johannes Schlatow',
+    maintainer_email='johannes.schlatow@googlemail.com',
+    url='https://github.com/ValiValpas/pgp-mime',
+    download_url='https://github.com/ValiValpas/pgp-mime/archive/v{}.tar.gz'.format(__version__),
     license = 'GNU General Public License (GPL)',
     platforms = ['all'],
     description = __doc__,
