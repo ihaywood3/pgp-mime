@@ -51,7 +51,7 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
     Sign and encrypt with a specific subkey:
 
     >>> sign_and_encrypt_bytes(
-    ...     bytes(b'Hello'), signers=['0x2F73DE2E'],
+    ...     bytes(b'Hello'), signers=['0x7B2E921E'],
     ...     recipients=['pgp-mime@invalid.com'], always_trust=True)
     ... # doctest: +ELLIPSIS
     b'-----BEGIN PGP MESSAGE-----\n...-----END PGP MESSAGE-----\n'
@@ -62,11 +62,21 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
     if recipients:
         for recipient in recipients:
             keys.append(ctx.get_key(recipient))
+    if signers:
+        ctx.signers = [ctx.get_key(signers[0])]
 
     plain = BytesIO(data)
     cipher = BytesIO()
 
-    ctx.encrypt(keys, always_trust, plain, cipher)
+    if recipients:
+        if signers:
+            ctx.encrypt_sign(keys, always_trust, plain, cipher)
+        else:
+            ctx.encrypt(keys, always_trust, plain, cipher)
+    elif mode == "detach":
+        ctx.sign(plain, cipher, gpgme.SIG_MODE_DETACH)        
+    else:
+        ctx.sign(plain, cipher, gpgme.SIG_MODE_NORMAL)        
 
     return cipher.getvalue()
 
