@@ -18,7 +18,7 @@ Installation
 Packages
 --------
 
-TODO: AUR package
+ - Archlinux User Repository: python-pgpmime-nopyassuan-git
 
 Dependencies
 ------------
