@@ -35,7 +35,7 @@ _setup(
     license = 'GNU General Public License (GPL)',
     platforms = ['all'],
     description = __doc__,
-    long_description=open(_os_path.join(_this_dir, 'README'), 'r').read(),
+    long_description=open(_os_path.join(_this_dir, 'README.md'), 'r').read(),
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
