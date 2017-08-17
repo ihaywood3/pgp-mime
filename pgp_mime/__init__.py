@@ -15,23 +15,14 @@
 # pgp-mime.  If not, see <http://www.gnu.org/licenses/>.
 
 """Python module and tools for constructing and sending pgp/mime email.
-
-Uses ``pyassuan`` to connect to ``gpgme-tool`` for the cryptography.
+.
 """
 
-import logging as _logging
+__version__ = '0.4-gpg'
 
-
-__version__ = '0.3-nopyassuan'
-
-
-LOG = _logging.getLogger('pgp-mime')
-LOG.setLevel(_logging.ERROR)
-LOG.addHandler(_logging.StreamHandler())
 
 
 from .pgp import sign, encrypt, sign_and_encrypt, decrypt, verify
-from .email import (
+from .myemail import (
     header_from_text, guess_encoding, encodedMIMEText, strip_bcc, append_text,
     attach_root, getaddresses, email_sources, email_targets)
-from .smtp import get_smtp_params, get_smtp, mail

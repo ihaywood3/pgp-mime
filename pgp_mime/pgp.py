@@ -23,11 +23,16 @@ from email.mime.multipart import MIMEMultipart as _MIMEMultipart
 from email import policy as _email_policy
 import io as _io
 import logging as _logging
-from crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
-from crypt import verify_bytes as _verify_bytes
-from myemail import email_targets as _email_targets
-from myemail import strip_bcc as _strip_bcc
-
+try:
+    from .crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
+    from .crypt import verify_bytes as _verify_bytes
+    from .myemail import email_targets as _email_targets
+    from .myemail import strip_bcc as _strip_bcc
+except SystemError:
+    from crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
+    from crypt import verify_bytes as _verify_bytes
+    from myemail import email_targets as _email_targets
+    from myemail import strip_bcc as _strip_bcc
 
 def _flatten(message):
     r"""Flatten a message to bytes.
