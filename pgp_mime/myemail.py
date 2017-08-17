@@ -29,6 +29,8 @@ ENCODING = 'utf-8'
 #ENCODING = 'iso-8859-1'
 
 
+
+
 def header_from_text(text):
     r"""Simple wrapper for instantiating a ``Message`` from text.
 
