@@ -4,21 +4,12 @@ The ``pgp_mime`` module makes it easy to construct and dispatch signed
 and/or encrypted email using PGP_ and :RFC:`3156`.  It uses GnuPG_
 (via `gpgme`_) to perform the cryptography.
 
-This module is based on W. Trevor King's ``pgp_mime`` which used ``pyassuan``
-in conjunction with ``gpgme-tool``. However, as the latter isn't usally distributed
-along with ``gpgme``, I replaced the ``crypt.py`` in order to handle
-cryptography with ``pygpgme`` instead.
+This module was orginally based on W. Trevor King's ``pgp_mime`` which used ``pyassuan``
+in conjunction with a ``gpgme-tool`` patched to work as a UNIX socket server. 
+However, as the latter isn't usally distributed along with ``gpgme``, 
+ValiValpas replaced the ``crypt.py`` in order to handle cryptography with ``pygpgme`` instead.
 
-If you still prefer the original version, please refer to:
-https://pypi.python.org/pypi/pgp-mime/
-
-Installation
-============
-
-Packages
---------
-
- - Archlinux User Repository: python-pgpmime-nopyassuan-git
+This version is adapted again to use the stock GPGME bindings for Python.
 
 Dependencies
 ------------

@@ -22,12 +22,11 @@ from email.mime.application import MIMEApplication as _MIMEApplication
 from email.mime.multipart import MIMEMultipart as _MIMEMultipart
 from email import policy as _email_policy
 import io as _io
-
-from . import LOG as _LOG
-from .crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
-from .crypt import verify_bytes as _verify_bytes
-from .email import email_targets as _email_targets
-from .email import strip_bcc as _strip_bcc
+import logging as _logging
+from crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
+from crypt import verify_bytes as _verify_bytes
+from myemail import email_targets as _email_targets
+from myemail import strip_bcc as _strip_bcc
 
 
 def _flatten(message):
@@ -52,7 +51,7 @@ def sign(message, **kwargs):
 
     >>> from pgp_mime.email import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> signed = sign(message, signers=['pgp-mime@invalid.com'])
+    >>> signed = sign(message, signers=True)
     >>> signed.set_boundary('boundsep')
     >>> print(signed.as_string().replace(
     ...     'micalg="pgp-sha1"; protocol="application/pgp-signature"',
@@ -77,7 +76,7 @@ def sign(message, **kwargs):
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG...
+    ...
     -----END PGP SIGNATURE-----
     <BLANKLINE>
     --boundsep--
@@ -86,7 +85,7 @@ def sign(message, **kwargs):
     >>> message = MIMEMultipart()
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
-    >>> signed = sign(message, signers=['pgp-mime@invalid.com'])
+    >>> signed = sign(message, signers=[TESTADDRESS])
     >>> signed.set_boundary('boundsep')
     >>> print(signed.as_string().replace(
     ...     'micalg="pgp-sha1"; protocol="application/pgp-signature"',
@@ -122,7 +121,7 @@ def sign(message, **kwargs):
     Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP SIGNATURE-----
-    Version: GnuPG...
+    ...
     -----END PGP SIGNATURE-----
     <BLANKLINE>
     --boundsep--
@@ -152,7 +151,7 @@ def encrypt(message, recipients=None, **kwargs):
 
     >>> from pgp_mime.email import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
+    >>> message['To'] = TESTEMAIL
     >>> encrypted = encrypt(message, always_trust=True)
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string().replace(
@@ -177,7 +176,7 @@ def encrypt(message, recipients=None, **kwargs):
     Content-Type: application/octet-stream; name="encrypted.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP MESSAGE-----
-    Version: GnuPG...
+    ...
     -----END PGP MESSAGE-----
     <BLANKLINE>
     --boundsep--
@@ -187,7 +186,7 @@ def encrypt(message, recipients=None, **kwargs):
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
     >>> encrypted = encrypt(
-    ...     message, recipients=['pgp-mime@invalid.com'], always_trust=True)
+    ...     message, recipients=[TESTADDRESS], always_trust=True)
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string().replace(
     ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
@@ -211,7 +210,7 @@ def encrypt(message, recipients=None, **kwargs):
     Content-Type: application/octet-stream; name="encrypted.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP MESSAGE-----
-    Version: GnuPG...
+    ...
     -----END PGP MESSAGE-----
     <BLANKLINE>
     --boundsep--
@@ -219,7 +218,7 @@ def encrypt(message, recipients=None, **kwargs):
     body = _flatten(message)
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
-        _LOG.debug('extracted encryption recipients: {}'.format(recipients))
+        _logging.debug('extracted encryption recipients: {}'.format(recipients))
     encrypted = str(_sign_and_encrypt_bytes(
             data=body, recipients=recipients, **kwargs), 'us-ascii')
     enc = _MIMEApplication(
@@ -242,25 +241,30 @@ def encrypt(message, recipients=None, **kwargs):
     msg['Content-Disposition'] = 'inline'
     return msg
 
-def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
+def sign_and_encrypt(message, signers=True, recipients=None, **kwargs):
     r"""Sign and encrypt a ``Message``, returning the encrypted version.
-
+     signers=True use the default private key
+     signers=None means just encrypt, don't sign at all
+     can also be a list of IDs of local keys to sign with
+     
+     receipients=None -- infer from the To header
     multipart/encrypted
      +-> application/pgp-encrypted  (control information)
      +-> application/octet-stream   (body)
 
     >>> from pgp_mime.email import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
+    >>> message['To'] = TESTEMAIL
     >>> encrypted = sign_and_encrypt(
-    ...     message, signers=['pgp-mime@invalid.com'], always_trust=True)
+    ...     message, signers=[TESTADDRESS], always_trust=True)
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string().replace(
     ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
-    ...     'protocol="application/pgp-encrypted"; micalg="pgp-sha1"'))
+    ...     'protocol="application/pgp-encrypted"; micalg="pgp-sha1"').replace(TESTEMAIL,'TESTEMAIL'))
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: multipart/encrypted; protocol="application/pgp-encrypted"; micalg="pgp-sha1"; boundary="boundsep"
     MIME-Version: 1.0
+    To: TESTEMAIL
     Content-Disposition: inline
     <BLANKLINE>
     --boundsep
@@ -277,7 +281,7 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     Content-Type: application/octet-stream; name="encrypted.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP MESSAGE-----
-    Version: GnuPG...
+    ...
     -----END PGP MESSAGE-----
     <BLANKLINE>
     --boundsep--
@@ -287,8 +291,8 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
     >>> encrypted = sign_and_encrypt(
-    ...     message, signers=['pgp-mime@invalid.com'],
-    ...     recipients=['pgp-mime@invalid.com'], always_trust=True)
+    ...     message, signers=[TESTEMAIL],
+    ...     recipients=[TESTEMAIL], always_trust=True)
     >>> encrypted.set_boundary('boundsep')
     >>> print(encrypted.as_string().replace(
     ...     'micalg="pgp-sha1"; protocol="application/pgp-encrypted"',
@@ -312,16 +316,19 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
     Content-Type: application/octet-stream; name="encrypted.asc"; charset="us-ascii"
     <BLANKLINE>
     -----BEGIN PGP MESSAGE-----
-    Version: GnuPG...
+    ...
     -----END PGP MESSAGE-----
     <BLANKLINE>
     --boundsep--
     """
-    _strip_bcc(message=message)
+    old_bcc = None
+    if 'Bcc' in message:
+        old_bcc = message['Bcc']
+        _strip_bcc(message=message)
     body = _flatten(message)
     if recipients is None:
         recipients = [email for name,email in _email_targets(message)]
-        _LOG.debug('extracted encryption recipients: {}'.format(recipients))
+        _logging.debug('extracted encryption recipients: {}'.format(recipients))
     encrypted = str(
         _sign_and_encrypt_bytes(
             data=body, signers=signers, recipients=recipients, **kwargs),
@@ -343,6 +350,11 @@ def sign_and_encrypt(message, signers=None, recipients=None, **kwargs):
         protocol='application/pgp-encrypted')
     msg.attach(control)
     msg.attach(enc)
+    if 'From' in message: msg['From'] = message["From"]
+    if 'To' in message: msg['To'] = message['To']
+    if 'Subject' in message: msg['Subject'] = message['Subject']
+    if 'Cc' in message: msg['Cc'] = message['Cc']
+    if old_bcc: msg['Bcc'] = old_bcc
     msg['Content-Disposition'] = 'inline'
     return msg
 
@@ -405,7 +417,7 @@ def decrypt(message, **kwargs):
     >>> from pgp_mime.email import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
     >>> encrypted = encrypt(
-    ...     message, recipients=['<pgp-mime@invalid.com>'], always_trust=True)
+    ...     message, recipients=[TESTEMAIL], always_trust=True)
     >>> decrypted = decrypt(encrypted)
     >>> print(decrypted.as_string().replace('\r\n', '\n'))
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
@@ -422,7 +434,7 @@ def decrypt(message, **kwargs):
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
     >>> encrypted = encrypt(
-    ...     message, recipients=['pgp-mime@invalid.com'], always_trust=True)
+    ...     message, recipients=[TESTEMAIL], always_trust=True)
     >>> decrypted = decrypt(encrypted)
     >>> decrypted.set_boundary('boundsep')
     >>> print(decrypted.as_string()) # doctest: +ELLIPSIS, +REPORT_UDIFF
@@ -456,56 +468,34 @@ def decrypt(message, **kwargs):
 def verify(message, **kwargs):
     r"""Verify a signature on ``message``, possibly decrypting first.
 
-    >>> from pgp_mime.email import encodedMIMEText
+    >>> from myemail import encodedMIMEText
     >>> message = encodedMIMEText('Hi\nBye')
-    >>> message['To'] = 'pgp-mime-test <pgp-mime@invalid.com>'
-    >>> encrypted = sign_and_encrypt(message, signers=['pgp-mime@invalid.com'],
+    >>> message['To'] = TESTADDRESS
+    >>> encrypted = sign_and_encrypt(message, signers=[TESTEMAIL],
     ...     always_trust=True)
     >>> decrypted,verified,signatures = verify(encrypted)
-    >>> print(decrypted.as_string().replace('\r\n', '\n'))
+    >>> print(decrypted.as_string().replace('\r\n', '\n').replace(TESTADDRESS,'TESTADDRESS'))
     ... # doctest: +ELLIPSIS, +REPORT_UDIFF
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
     Content-Disposition: inline
-    To: pgp-mime-test <pgp-mime@invalid.com>
+    To: TESTADDRESS
     <BLANKLINE>
     Hi
     Bye
     >>> verified
-    False
+    True
     >>> for s in signatures:
-    ...     print(s.dumps())  # doctest: +REPORT_UDIFF
-    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
-    DECC812C8795ADD60538B0CD171008BA2F73DE2E signature:
-      summary:
-        CRL missing: False
-        CRL too old: False
-        bad policy: False
-        green: False
-        key expired: False
-        key missing: False
-        key revoked: False
-        red: False
-        signature expired: False
-        system error: False
-        valid: False
-      status: success
-      timestamp: ...
-      expiration timestamp: None
-      wrong key usage: False
-      pka trust: not available
-      chain model: False
-      validity: unknown
-      validity reason: success
-      public key algorithm: RSA
-      hash algorithm: SHA256
+    ...     print(s)
+    ... # doctest: +ELLIPSIS
+    Signature(chain_model=False, exp_timestamp=0, fpr='...', hash_algo=2, key=None, notations=[], pka_address=None, pka_trust=0, pubkey_algo=17, status=0, summary=3, timestamp=..., validity=4, validity_reason=0, wrong_key_usage=False)
 
     >>> from email.mime.multipart import MIMEMultipart
     >>> message = MIMEMultipart()
     >>> message.attach(encodedMIMEText('Part A'))
     >>> message.attach(encodedMIMEText('Part B'))
-    >>> signed = sign(message, signers=['pgp-mime@invalid.com'])
+    >>> signed = sign(message, signers=[TESTADDRESS])
     >>> decrypted,verified,signatures = verify(signed)
     >>> decrypted.set_boundary('boundsep')
     >>> print(decrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
@@ -528,114 +518,96 @@ def verify(message, **kwargs):
     Part B
     --boundsep--
     >>> verified
-    False
+    True
     >>> for s in signatures:
-    ...     print(s.dumps())  # doctest: +REPORT_UDIFF
-    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
-    DECC812C8795ADD60538B0CD171008BA2F73DE2E signature:
-      summary:
-        CRL missing: False
-        CRL too old: False
-        bad policy: False
-        green: False
-        key expired: False
-        key missing: False
-        key revoked: False
-        red: False
-        signature expired: False
-        system error: False
-        valid: False
-      status: success
-      timestamp: ...
-      expiration timestamp: None
-      wrong key usage: False
-      pka trust: not available
-      chain model: False
-      validity: unknown
-      validity reason: success
-      public key algorithm: RSA
-      hash algorithm: SHA1
+    ...     print(s) 
+    ... # doctest: +ELLIPSIS
+    Signature(chain_model=False, exp_timestamp=0, fpr='...', hash_algo=2, key=None, notations=[], pka_address=None, pka_trust=0, pubkey_algo=17, status=0, summary=3, timestamp=..., validity=4, validity_reason=0, wrong_key_usage=False)
 
-    Test a message generated by Mutt (for sanity):
-
+    Test a message generated by Thundderbird=Engimail (for sanity):
+    >>> verified = None
+    >>> signatures = None
     >>> from email import message_from_bytes
-    >>> message_bytes = b'\n'.join([
-    ...   b'Return-Path: <pgp-mime@invalid.com>',
-    ...   b'Received: by invalid; Tue, 24 Apr 2012 19:46:59 -0400',
-    ...   b'Date: Tue, 24 Apr 2012 19:46:59 -0400',
-    ...   b'From: pgp-mime-test <pgp-mime@invalid.com',
-    ...   b'To: pgp-mime@invalid.com',
-    ...   b'Subject: test',
-    ...   b'Message-ID: <20120424233415.GA27788@invalid>',
-    ...   b'MIME-Version: 1.0',
-    ...   b'Content-Type: multipart/signed; micalg=pgp-sha1;',
-    ...   b'  protocol="application/pgp-signature";',
-    ...   b'  boundary="kORqDWCi7qDJ0mEj"',
-    ...   b'Content-Disposition: inline',
-    ...   b'User-Agent: Mutt/1.5.21 (2010-09-15)',
-    ...   b'Content-Length: 740',
-    ...   b'',
-    ...   b'',
-    ...   b'--kORqDWCi7qDJ0mEj',
-    ...   b'Content-Type: text/plain; charset=us-ascii',
-    ...   b'Content-Disposition: inline',
-    ...   b'',
-    ...   b'ping!',
-    ...   b'',
-    ...   b'--kORqDWCi7qDJ0mEj',
-    ...   b'Content-Type: application/pgp-signature; name="signature.asc"',
-    ...   b'Content-Description: OpenPGP digital signature',
-    ...   b'',
-    ...   b'-----BEGIN PGP SIGNATURE-----',
-    ...   b'Version: GnuPG v2.0.17 (GNU/Linux)',
-    ...   b'',
-    ...   b'iQEcBAEBAgAGBQJPlztxAAoJEFEa7aZDMrbjwT0H/i9eN6CJ2FIinK7Ps04XYEbL',
-    ...   b'PSQV1xCxb+2bk7yA4zQnjAKOPSuMDXfVG669Pbj8yo4DOgUqIgh+lK+voec9uwsJ',
-    ...   b'ZgUJcMozSmEFSTPO+Fiyx0S+NjnaLsas6IQrQTVDc6lWiIZttgxuN0crH5DcLomB',
-    ...   b'Ip90+ELbzVN3yBAjMJ1Y6xnKd7C0IOKm7VunYu9eCzJ/Rik5qZ0+IacQQnnrFJEN',
-    ...   b'04nDvDUzfaKy80Ke7VAQBIRi85XCsM2h0KDXOGUZ0xPQ8L/4eUK9tL6DJaqKqFPl',
-    ...   b'zNiwfpue01o6l6kngrQdXZ3tuv0HbLGc4ACzfz5XuGvE5PYTNEsylKLUMiSCIFc=',
-    ...   b'=xP0S',
-    ...   b'-----END PGP SIGNATURE-----',
-    ...   b'',
-    ...   b'--kORqDWCi7qDJ0mEj--',
-    ...   b''])
+    >>> message_bytes = '\n'.join(
+    ... ['To: ihaywood3@gmail.com',
+    ... 'From: Ian Haywood <ian@haywood.id.au>',
+    ... 'Subject: test message',
+    ... 'Message-ID: <d9c718a2-46f5-f702-4ec9-39ec6a4f0582@haywood.id.au>',
+    ... 'Date: Thu, 17 Aug 2017 12:03:57 +1000',
+    ... 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101',
+    ... ' Thunderbird/52.2.1',
+    ... 'MIME-Version: 1.0',
+    ... 'Content-Type: multipart/encrypted;',
+    ... ' protocol="application/pgp-encrypted";',
+    ... ' boundary="kF4M06pNtcSQkWDo3x7nJHQsGwrfvpuR2"',
+    ... '',
+    ... 'This is an OpenPGP/MIME encrypted message (RFC 4880 and 3156)',
+    ... '--kF4M06pNtcSQkWDo3x7nJHQsGwrfvpuR2',
+    ... 'Content-Type: application/pgp-encrypted',
+    ... 'Content-Description: PGP/MIME version identification',
+    ... '',
+    ... 'Version: 1',
+    ... '',
+    ... '--kF4M06pNtcSQkWDo3x7nJHQsGwrfvpuR2',
+    ... 'Content-Type: application/octet-stream; name="encrypted.asc"',
+    ... 'Content-Description: OpenPGP encrypted message',
+    ... 'Content-Disposition: inline; filename="encrypted.asc"',
+    ... '',
+    ... '-----BEGIN PGP MESSAGE-----',
+    ... '',
+    ... 'hQEOA6KWUi8uBFm6EAP/ZloFzI9+VuU1lV6B3Q5SfcPsDpcj4zJcdylfXNoqfvmq',
+    ... 'kYl8wZo0n1/kCiUgyfsOOXU8AN6C3QFLX5WcDZeOaLguXVw4bRXOVXW/Fs7m9DZI',
+    ... 'JxQeX6XlVIgZDLlSwEd8YDwi3zA9aUQhQqyMrSbsh2ZcJghW+JkebGhtp+1ne18D',
+    ... '/ik1NG6zXo3ZzUGw+yasCZWYpSbqbCVHFUna888HXj0dc4xdt+SRIXz10rgnweUR',
+    ... '+/WvLd8+UPYMGX7ABhVwZDqv3vGVuQ+Ddw1u/epCwQ9Vtj4338mRI0qcDV3u2AP6',
+    ... 'vY9JrKrAgZHpZsyhFxsnAhkYQKzU4PVEUf8tdZaIfpZr0ukBuNz7boJNQutffmyc',
+    ... '1Mcdt090hUbyra2ESWeb6D3/Qg0rxbZ0MlJgohi+CTdp1sMiqnJnMD8nzJ87iEwV',
+    ... '3YYpCwW0r/ITrxSD/hKbh6wUh9hmw+ulDc6QggYrVT1HczDm2EIA4ix6oqDMWCYv',
+    ... 'JDWnStIWmfyZ6NobO2pBkAOgsG61OvIMjVBPTguTp0SygBfuPdgq8MYaVfZ4+kCd',
+    ... 'OAQPqulWBYjCwb1rEYVNydtN+DA7GVk0M+YbwQYoBPTYgRVjRSTNNQzotgxP3iW5',
+    ... '1TFaBZ1Ngi67fY62ResGb/ds8vG43On4eBaUNerBwppQzqh4xOgn1L5nLNFHnEQ8',
+    ... 'QLuiG17zC5cydbiZD78MXoZk/vPjsHnhFVC/w/q/2WEUeMiMg2CH9GCrwk33KTKR',
+    ... 'bItUQBjJa0welhq1F3C/BJha4k7qoN0PtIWZWLlvWFdj236I/d7k964Is+Gh+isg',
+    ... 'ZUr4iAe/1MrLErpF+hwYn17JbdEt6bL76PuIa0SlrdVuT+MCjX//N+YyrXpmfPd2',
+    ... 'H1v7/Sa4jSBx1xuEjuYih8xcfq2M9EeXrBT0kYfZZHJcTuG/9L8SHq3Izpy1Pjva',
+    ... 'KvA2dKA7n5SIgTdYK89+rplM4McAY7vIs2cCdNe2TvYULHigRELcfTTU0IWD9clg',
+    ... 'QWSdp54ANi9HdkaUW7vk1Mo7aRfofQo0xd1/2Yl8b9lrrw5wDQq8hMwKMQ==',
+    ... '=0unP',
+    ... '-----END PGP MESSAGE-----',
+    ... '',
+    ... '--kF4M06pNtcSQkWDo3x7nJHQsGwrfvpuR2--',
+    ...   '']).encode("us-ascii")
     >>> message = message_from_bytes(message_bytes)
     >>> decrypted,verified,signatures = verify(message)
-    >>> print(decrypted.as_string())  # doctest: +ELLIPSIS, +REPORT_UDIFF
-    Content-Type: text/plain; charset=us-ascii
-    Content-Disposition: inline
+    >>> print(decrypted.as_string())  # doctest: +ELLIPSIS
+    Content-Type: multipart/mixed; boundary="...";
+     protected-headers="v1"
+    From: Ian Haywood <ian@haywood.id.au>
+    To: ihaywood3@gmail.com
+    Message-ID: <...>
+    Subject: test message
     <BLANKLINE>
-    ping!
+    --...
+    Content-Type: multipart/mixed; boundary="..."
+    <BLANKLINE>
+    --...
+    Content-Type: text/plain; charset=utf-8
+    Content-Transfer-Encoding: quoted-printable
+    Content-Language: en-US
+    <BLANKLINE>
+    bazinga!
+    <BLANKLINE>
+    <BLANKLINE>
+    --...--
+    <BLANKLINE>
+    --...--
     <BLANKLINE>
     >>> verified
-    False
+    True
     >>> for s in signatures:
-    ...     print(s.dumps())  # doctest: +REPORT_UDIFF
-    ... # doctest: +REPORT_UDIFF, +ELLIPSIS
-    B2EDBE0E771A4B8708DD16A7511AEDA64332B6E3 signature:
-      summary:
-        CRL missing: False
-        CRL too old: False
-        bad policy: False
-        green: False
-        key expired: False
-        key missing: False
-        key revoked: False
-        red: False
-        signature expired: False
-        system error: False
-        valid: False
-      status: success
-      timestamp: Tue Apr 24 23:46:57 2012
-      expiration timestamp: None
-      wrong key usage: False
-      pka trust: not available
-      chain model: False
-      validity: unknown
-      validity reason: success
-      public key algorithm: RSA
-      hash algorithm: SHA1
+    ...     print(s) 
+    ... # doctest: +ELLIPSIS
+    Signature(chain_model=False, exp_timestamp=0, fpr='9BF067B7F84FF7EE0C42C06328FCBC52E750652E', hash_algo=2, key=None, notations=[], pka_address=None, pka_trust=0, pubkey_algo=17, status=0, summary=3, timestamp=..., validity=4, validity_reason=0, wrong_key_usage=False)
     """
     ct = message.get_content_type()
     if ct == 'multipart/encrypted':
@@ -652,3 +624,26 @@ def verify(message, **kwargs):
     decrypted,verified,result = _verify_bytes(
         _flatten(body), signature=sig_data, **kwargs)
     return (_copy.deepcopy(body), verified, result)
+
+
+
+def test_sending():
+    from myemail import encodedMIMEText
+    message = encodedMIMEText('Hi\nBye')
+    message['To'] = TESTEMAIL
+    message['From'] = TESTEMAIL
+    message['Subject'] = "hello from pgp-mime"
+    encrypted = sign_and_encrypt(message)
+    import smtplib
+    conn = smtplib.SMTP("haywood.id.au")
+    conn.send_message(encrypted)
+    conn.close()
+
+if __name__ == "__main__":
+    import doctest
+    global TESTEMAIL
+    TESTEMAIL='Ian Haywood <ian@haywood.id.au>'
+    global TESTADDRESS
+    TESTADDRESS='ian@haywood.id.au'
+    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+    #test_sending()
