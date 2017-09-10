@@ -195,7 +195,7 @@ def getaddresses(addresses):
                 n.append(str(b, encoding))
         yield (' '.join(n), address)
 
-def email_sources(message):
+def email_sources(message,field="from"):
     """Extract author address from an email ``Message``
 
     Search the header of an email Message instance to find the
@@ -207,7 +207,7 @@ def email_sources(message):
     >>> list(email_sources(header))
     [('Джон Доу', 'jdoe@a.gov.ru'), ('Jack', 'jack@hill.org')]
     """
-    froms = message.get_all('from', [])
+    froms = message.get_all(field, []))
     return getaddresses(froms) # [(name, address), ...]
 
 def email_targets(message):

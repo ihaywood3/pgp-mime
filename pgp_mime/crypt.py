@@ -16,11 +16,13 @@
 
 import gpg
 import gpg.constants as constants
+import time
 
 try:
-    from io import BytesIO
+    from io import BytesIO, StringIO
 except ImportError:
     from StringIO import StringIO as BytesIO
+    from StringIO import StringIO
 
 def sign_and_encrypt_bytes(data, signers=None, recipients=None,
                            always_trust=False, mode='detach',
@@ -29,42 +31,31 @@ def sign_and_encrypt_bytes(data, signers=None, recipients=None,
 
     Just sign (with a detached signature):
 
-    >>> print(sign_and_encrypt_bytes(
-    ...     bytes(b'Hello'), signers=True))
-    ... # doctest: +ELLIPSIS
-    -----BEGIN PGP SIGNATURE-----
-    ...
-    -----END PGP SIGNATURE-----
+    >>> sign_and_encrypt_bytes(b'Hello', signers=True)
+    b'-----BEGIN PGP SIGNATURE-----...-----END PGP SIGNATURE-----\n'
 
     Just encrypt:
 
-    >>> print(sign_and_encrypt_bytes(
-    ...     bytes(b'Hello'), recipients=['ian@haywood.id.au'],
-    ...     always_trust=True))
+    >>> sign_and_encrypt_bytes(b'Hello', recipients=['ian@haywood.id.au'],
+    ...     always_trust=True)
     ... # doctest: +ELLIPSIS
-    -----BEGIN PGP MESSAGE-----
-    ...
-    -----END PGP MESSAGE-----
+    b'-----BEGIN PGP MESSAGE-----...-----END PGP MESSAGE-----\n'
 
     Sign and encrypt:
 
-    >>> print(sign_and_encrypt_bytes(
-    ...     bytes(b'Hello'), signers=True,
-    ...     recipients=['ian@haywood.id.au'], always_trust=True))
+    >>> sign_and_encrypt_bytes(
+    ...     b'Hello', signers=True,
+    ...     recipients=['ian@haywood.id.au'], always_trust=True)
     ... # doctest: +ELLIPSIS
-    -----BEGIN PGP MESSAGE-----
-    ...
-    -----END PGP MESSAGE-----
+    b'-----BEGIN PGP MESSAGE-----...-----END PGP MESSAGE-----\n'
 
     Sign and encrypt with a specific subkey:
 
-    >>> print(sign_and_encrypt_bytes(
-    ...     bytes(b'Hello'), signers=['ian@haywood.id.au'],
-    ...     recipients=['ian@haywood.id.au'], always_trust=True))
+    >>> sign_and_encrypt_bytes(
+    ...     b'Hello', signers=['ian@haywood.id.au'],
+    ...     recipients=['ian@haywood.id.au'], always_trust=True)
     ... # doctest: +ELLIPSIS
-    -----BEGIN PGP MESSAGE-----
-    ...
-    -----END PGP MESSAGE-----
+    b'-----BEGIN PGP MESSAGE-----...-----END PGP MESSAGE-----\n'
     """
     if not ctx:
         ctx = gpg.Context()
@@ -104,25 +95,11 @@ def verify_bytes(data, signature=None, always_trust=False, ctx=None, **kwargs):
     ...     # doctest: +NORMALIZE_WHITESPACE
     >>> output,verified,signatures = verify_bytes(b)
     >>> output
-    'Hello'
+    b'Hello'
     >>> verified
     True
-    >>> print(signatures)
-    [Signature(chain_model=False, 
-    exp_timestamp=0L,
-    fpr='9BF067B7F84FF7EE0C42C06328FCBC52E750652E', 
-    hash_algo=2, 
-    key=None, 
-    notations=[], 
-    pka_address=None, 
-    pka_trust=0, 
-    pubkey_algo=17, 
-    status=0L, 
-    summary=3, 
-    timestamp=1502926440L, 
-    validity=4, 
-    validity_reason=0L, 
-    wrong_key_usage=False)]
+    >>> signatures
+    [Signature(chain_model=False, exp_timestamp=0, fpr='9BF067B7F84FF7EE0C42C06328FCBC52E750652E', hash_algo=2, key=None, notations=[], pka_address=None, pka_trust=0, pubkey_algo=17, status=0, summary=3, timestamp=1502926440, validity=4, validity_reason=0, wrong_key_usage=False)]
     """
     if not ctx:
         ctx = gpg.Context()
@@ -137,6 +114,55 @@ def verify_bytes(data, signature=None, always_trust=False, ctx=None, **kwargs):
             if not (sig.summary & constants.SIGSUM_VALID):
                 verified = False
     return (plain, verified, sigdata.signatures)
+
+def process_signature(sig,ctx=None):
+    r"""Process a single signature and return a short string describing it
+    Will be of the form 'Good signature from X on Y' or 'Bad signature: XXX'
+
+    >>> b = '\n'.join([
+    ...     '-----BEGIN PGP MESSAGE-----',
+    ...     '',
+    ...     'jA0EBwMCWRBmko3MkBjk0p4BrqRwPUeG0PKgWS+vPELpixMs2CMIuIypiDGe42rb',
+    ...     'Ip0MTHN9VqEGw29UdGQ7wPDFe4KX5++ugPijR1lHoyd35Yk9C47uZxh7okzvyj/x',
+    ...     '+HLgY115BP/Y7eAX8hrs1f3dXueROfzMbbyOMunXhPfRbKqRCS2RHWIp+tphZTU7',
+    ...     'g17VL1vN1+KgiTFBBrbSllEazso3ffeQabO2dp92HQ==\n=1koP',
+    ...     '-----END PGP MESSAGE-----',
+    ...     '',
+    ...     ]).encode('us-ascii')
+    ...     # doctest: +NORMALIZE_WHITESPACE
+    >>> output,verified,signatures = verify_bytes(b)
+    >>> process_signature(signatures[0])
+    'Signed by Ian Haywood <ian@haywood.id.au> on Thu Aug 17 09:34:00 2017'
+
+    """
+    if not ctx:
+        ctx = gpg.Context()
+    if sig.summary & constants.SIGSUM_VALID:
+        key = ctx.get_key(sig.fpr)
+        uid = key.uids[0].uid
+        t = time.strftime("%c",time.localtime(sig.timestamp))
+        return "Signed by {} on {}".format(uid,t)
+    else:
+        masks = [(constants.SIGSUM_BAD_POLICY,'bad policy'),
+                 (constants.SIGSUM_CRL_TOO_OLD,'CRL too old'),
+                 (constants.SIGSUM_KEY_EXPIRED,"Key expired"),
+                 (constants.SIGSUM_KEY_REVOKED,"Key revoked by owner"),
+                 (constants.SIGSUM_SIG_EXPIRED,"Signature expired"),
+                 (constants.SIGSUM_TOFU_CONFLICT,"Multiple conflicting keys"),
+                 (constants.SIGSUM_CRL_MISSING,"CRL missing"),
+                 (constants.SIGSUM_KEY_MISSING,"Kewy missing"),
+                 (constants.SIGSUM_SYS_ERROR,"System error")]
+        return "Bad signature: "+", ".join(c for m, c in masks if m & sig.summary)
+
+
+def uid_from_signature(sig,ctx=None):
+    if not ctx:
+        ctx = gpg.Context()
+    if sig.fpr:
+        key = ctx.get_key(sig.fpr)
+        return key.uids[0].uid
+    else:
+        return None
 
 if __name__ == "__main__":
     import doctest

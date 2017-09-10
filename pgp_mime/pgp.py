@@ -367,7 +367,8 @@ def _get_encrypted_parts(message):
     ct = message.get_content_type()
     assert ct == 'multipart/encrypted', ct
     params = dict(message.get_params())
-    assert params.get('protocol', None) == 'application/pgp-encrypted', params
+    if not params.get('protocol', None) == 'application/pgp-encrypted':
+        logging.warning("protocol is not correct")
     assert message.is_multipart(), message
     control = body = None
     for part in message.get_payload():
@@ -377,16 +378,16 @@ def _get_encrypted_parts(message):
         ct = part.get_content_type()
         if ct == 'application/pgp-encrypted':
             if control:
-                raise ValueError('multiple application/pgp-encrypted parts')
+                logging.warning('multiple application/pgp-encrypted parts')
             control = part
         elif ct == 'application/octet-stream':
             if body:
-                raise ValueError('multiple application/octet-stream parts')
+                logging.warning('multiple application/octet-stream parts')
             body = part
         else:
-            raise ValueError('unnecessary {} part'.format(ct))
+            logging.warning('unnecessary {} part'.format(ct))
     if not control:
-        raise ValueError('missing application/pgp-encrypted part')
+        logging.warning('missing application/pgp-encrypted part')
     if not body:
         raise ValueError('missing application/octet-stream part')
     return (control, body)
@@ -395,7 +396,8 @@ def _get_signed_parts(message):
     ct = message.get_content_type()
     assert ct == 'multipart/signed', ct
     params = dict(message.get_params())
-    assert params.get('protocol', None) == 'application/pgp-signature', params
+    if not params.get('protocol', None) == 'application/pgp-signature':
+        logging.warning("protocol is wrong")
     assert message.is_multipart(), message
     body = signature = None
     for part in message.get_payload():
@@ -404,7 +406,7 @@ def _get_signed_parts(message):
         ct = part.get_content_type()
         if ct == 'application/pgp-signature':
             if signature:
-                raise ValueError('multiple application/pgp-signature parts')
+                logging.warning('multiple application/pgp-signature parts')
             signature = part
         else:
             if body:
@@ -620,15 +622,15 @@ def verify(message, **kwargs):
         encrypted = body.get_payload(decode=True)
         if not isinstance(encrypted, bytes):
             encrypted = encrypted.encode('us-ascii')
-        decrypted,verified,message = _verify_bytes(encrypted)
-        return (_message_from_bytes(decrypted), verified, message)
+        decrypted,verified,signatures = _verify_bytes(encrypted)
+        return (_message_from_bytes(decrypted), verified, signatures)
     body,signature = _get_signed_parts(message)
     sig_data = signature.get_payload(decode=True)
     if not isinstance(sig_data, bytes):
         sig_data = sig_data.encode('us-ascii')
-    decrypted,verified,result = _verify_bytes(
+    decrypted,verified,signatures = _verify_bytes(
         _flatten(body), signature=sig_data, **kwargs)
-    return (_copy.deepcopy(body), verified, result)
+    return (_copy.deepcopy(body), verified, signatures)
 
 
 
