@@ -207,7 +207,7 @@ def email_sources(message,field="from"):
     >>> list(email_sources(header))
     [('Джон Доу', 'jdoe@a.gov.ru'), ('Jack', 'jack@hill.org')]
     """
-    froms = message.get_all(field, []))
+    froms = message.get_all(field, [])
     return getaddresses(froms) # [(name, address), ...]
 
 def email_targets(message):

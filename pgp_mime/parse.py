@@ -32,12 +32,12 @@ try:
     from .pgp import verify as _verify
     from .crypt import verify_bytes as _verify_bytes
     from .crypt import process_signature as _process_signature
-    from .crypt import uid_from signature as _uid_from_sig
+    from .crypt import uid_from_signature as _uid_from_sig
 except SystemError:
     from pgp import verify as _verify
     from crypt import verify_bytes as _verify_bytes
     from crypt import process_signature as _process_signature
-    from crypt import uid_from signature as _uid_from_sig
+    from crypt import uid_from_signature as _uid_from_sig
 
 def mime_taster(data):
     r"""
