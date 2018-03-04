@@ -17,7 +17,7 @@
 
 "Tools for dealing with Pretty Good Privacy (PGP) and email."
 
-from distutils.core import setup as _setup
+from setuptools import setup as _setup
 import os.path as _os_path
 
 from pgp_mime import __version__
@@ -28,21 +28,21 @@ _this_dir = _os_path.dirname(__file__)
 _setup(
     name='pgp-mime',
     version=__version__,
-    maintainer='Johannes Schlatow',
-    maintainer_email='johannes.schlatow@googlemail.com',
-    url='https://github.com/ValiValpas/pgp-mime',
-    download_url='https://github.com/ValiValpas/pgp-mime/archive/v{}.tar.gz'.format(__version__),
+    maintainer='Ian Haywood',
+    maintainer_email='ian@haywood.id.au',
+    url='https://github.com/ihaywood3/pgp-mime',
+    download_url='https://github.com/ihaywood3/pgp-mime/archive/master.tar.gz',
     license = 'GNU General Public License (GPL)',
     platforms = ['all'],
     description = __doc__,
     long_description=open(_os_path.join(_this_dir, 'README.md'), 'r').read(),
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Communications :: Email',
         'Topic :: Security :: Cryptography',
         'Topic :: Software Development'
