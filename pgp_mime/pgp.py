@@ -20,20 +20,24 @@ from email.encoders import encode_7or8bit as _encode_7or8bit
 from email.generator import BytesGenerator as _BytesGenerator
 from email.mime.application import MIMEApplication as _MIMEApplication
 from email.mime.multipart import MIMEMultipart as _MIMEMultipart
+from email.utils import formatdate
 from email import policy as _email_policy
 import io as _io
 import logging as _logging
+import smtplib
 try:
     from .crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
     from .crypt import verify_bytes as _verify_bytes
     from .myemail import email_targets as _email_targets
     from .myemail import strip_bcc as _strip_bcc
-except SystemError:
+    from .myemail import encodedMIMEText
+except (SystemError,ModuleNotFoundError):
     from crypt import sign_and_encrypt_bytes as _sign_and_encrypt_bytes
     from crypt import verify_bytes as _verify_bytes
     from myemail import email_targets as _email_targets
     from myemail import strip_bcc as _strip_bcc
-
+    from myemail import encodedMIMEText
+    
 def _flatten(message):
     r"""Flatten a message to bytes.
 
@@ -634,15 +638,21 @@ def verify(message, **kwargs):
 
 
 
-def test_sending():
-    from myemail import encodedMIMEText
-    message = encodedMIMEText('Hi\nBye')
-    message['To'] = TESTEMAIL
-    message['From'] = TESTEMAIL
-    message['Subject'] = "hello from pgp-mime"
-    encrypted = sign_and_encrypt(message)
-    import smtplib
-    conn = smtplib.SMTP("haywood.id.au")
+def send_mail(parts,from_,to,subject,smtp,reply_to=None):
+    """
+    The so-high-level-it-hurts interface for sending e-mail
+    """
+    message = _MIMEMultipart('mixed')
+    message['To'] = to
+    message['From'] = from_
+    message['Date'] = formatdate(localtime=True)
+    message['Subject'] = subject
+    if reply_to:
+        message['Reply-To'] = reply_to
+    for f in parts:
+        message.attach(f)
+    encrypted = sign_and_encrypt(message,signers=None,always_trust=True)
+    conn = smtplib.SMTP(smtp)
     conn.send_message(encrypted)
     conn.close()
 
@@ -652,5 +662,5 @@ if __name__ == "__main__":
     TESTEMAIL='Ian Haywood <ian@haywood.id.au>'
     global TESTADDRESS
     TESTADDRESS='ian@haywood.id.au'
-    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
-    #test_sending()
+    #doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+    send_mail([encodedMIMEText("Hi\nBye\n")],TESTEMAIL,TESTADDRESS,'hello from pgp_mime','haywood.id.au')
